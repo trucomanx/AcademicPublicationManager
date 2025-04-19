@@ -1,0 +1,2 @@
+# AcademicPublicationManager
+Academic Publication Manager
