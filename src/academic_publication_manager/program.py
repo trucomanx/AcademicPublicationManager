@@ -5,7 +5,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSplitter, QTreeWidget, QTreeWidgetItem,
                              QTableWidget, QTableWidgetItem, QLineEdit, QVBoxLayout, QHBoxLayout,
                              QWidget, QLabel, QTextEdit, QPushButton, QFileDialog, QScrollArea,
-                             QMenu, QInputDialog, QMessageBox)
+                             QMenu, QInputDialog, QMessageBox, QToolButton)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 
@@ -17,7 +17,10 @@ class BibManager(QMainWindow):
         self.data = {"structure": {"Root":{}}, "productions": {}}
         self.current_file = None
         self.current_prod_id = None
+        
+        self.init_toolbar()
         self.init_ui()
+        
         
         self.update_tree()
         self.table_widget.setRowCount(0)
@@ -25,6 +28,33 @@ class BibManager(QMainWindow):
         self.save_metadata_btn.setEnabled(False)
         self.current_prod_id = None
 
+    def init_toolbar(self):
+        toolbar = self.addToolBar("Main Toolbar")
+
+        # Botão Nova Árvore
+        new_tree_btn = QToolButton()
+        new_tree_btn.setText("Nova Árvore")
+        new_tree_btn.clicked.connect(self.new_tree)
+        new_tree_btn.setIcon(QIcon.fromTheme("document-new"))
+        new_tree_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        toolbar.addWidget(new_tree_btn)
+
+        # Botão Abrir
+        open_btn = QToolButton()
+        open_btn.setText("Abrir")
+        open_btn.clicked.connect(self.open_file)
+        open_btn.setIcon(QIcon.fromTheme("document-open"))
+        open_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        toolbar.addWidget(open_btn)
+
+        # Botão Salvar
+        save_btn = QToolButton()
+        save_btn.setText("Salvar")
+        save_btn.clicked.connect(self.save_file)
+        save_btn.setIcon(QIcon.fromTheme("document-save"))
+        save_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        toolbar.addWidget(save_btn)
+        
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -38,8 +68,9 @@ class BibManager(QMainWindow):
         vertical_splitter.addWidget(top_widget)
 
         horizontal_splitter = QSplitter(Qt.Horizontal)
-        top_layout.addWidget(horizontal_splitter)
 
+        top_layout.addWidget(horizontal_splitter)
+       
         self.tree_widget = QTreeWidget()
         self.tree_widget.setHeaderLabel("Estrutura de Pastas")
         self.tree_widget.itemClicked.connect(self.on_tree_item_clicked)
@@ -56,6 +87,7 @@ class BibManager(QMainWindow):
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(self.metadata_panel)
         horizontal_splitter.addWidget(scroll_area)
+
 
         self.save_metadata_btn = QPushButton("Salvar Metadados")
         self.save_metadata_btn.clicked.connect(self.save_metadata)
@@ -76,6 +108,10 @@ class BibManager(QMainWindow):
         self.filter_input.setPlaceholderText("Filtrar por título ou ID...")
         self.filter_input.textChanged.connect(self.filter_table)
         bottom_layout.addWidget(self.filter_input)
+
+
+        horizontal_splitter.setSizes([300, 300])
+
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu("Arquivo")
