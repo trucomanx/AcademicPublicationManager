@@ -14,10 +14,16 @@ class BibManager(QMainWindow):
         super().__init__()
         self.setWindowTitle("Gerenciador de Produções Bibliográficas")
         self.setGeometry(100, 100, 1200, 600)
-        self.data = {"structure": {}, "productions": {}}
+        self.data = {"structure": {"Root":{}}, "productions": {}}
         self.current_file = None
         self.current_prod_id = None
         self.init_ui()
+        
+        self.update_tree()
+        self.table_widget.setRowCount(0)
+        self.metadata_panel.setEnabled(False)
+        self.save_metadata_btn.setEnabled(False)
+        self.current_prod_id = None
 
     def init_ui(self):
         central_widget = QWidget()
@@ -73,10 +79,15 @@ class BibManager(QMainWindow):
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu("Arquivo")
+
         open_action = file_menu.addAction("Abrir")
-        save_action = file_menu.addAction("Salvar")
         open_action.triggered.connect(self.open_file)
+        
+        save_action = file_menu.addAction("Salvar")
         save_action.triggered.connect(self.save_file)
+        
+        new_tree_action = file_menu.addAction("Nova Árvore")
+        new_tree_action.triggered.connect(self.new_tree)
 
     def show_context_menu(self, position):
         item = self.tree_widget.itemAt(position)
@@ -99,6 +110,23 @@ class BibManager(QMainWindow):
                 rename_folder_action.triggered.connect(lambda: self.rename_folder(item))
                 
             menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+
+    def new_tree(self):
+        confirm = QMessageBox.question(
+            self, "Nova Árvore",
+            "Deseja apagar toda a estrutura atual e começar do zero?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        if confirm == QMessageBox.Yes:
+            self.data = {"structure": {"Root":{}}, "productions": {}}
+            self.current_prod_id = None
+            self.current_file = None
+            self.metadata_panel.setEnabled(False)
+            self.save_metadata_btn.setEnabled(False)
+            self.tree_widget.clear()
+            self.table_widget.setRowCount(0)
+                        
+            self.update_tree()
 
     def create_new_folder(self, parent_item):
         folder_name, ok = QInputDialog.getText(self, "Nova Pasta", "Nome da nova pasta:")

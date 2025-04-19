@@ -1,6 +1,6 @@
-# {PROGRAM_NAME}
+# academic-publication-manager
 
-{SUMMARY}
+Simple academic publication manager GUI.
 
 ![logo](screenshot.png)
 
@@ -10,21 +10,21 @@ To install the package from `PyPI`, follow the instructions below:
 
 
 ```bash
-pip install --upgrade {PROGRAM_NAME}
+pip install --upgrade academic-publication-manager
 ```
 
-Execute `which {PROGRAM_NAME}` to see where it was installed, probably in `/home/USERNAME/.local/bin/{PROGRAM_NAME}`.
+Execute `which academic-publication-manager` to see where it was installed, probably in `/home/USERNAME/.local/bin/academic-publication-manager`.
 
 ### Using
 
 To start, use the command below:
 
 ```bash
-{PROGRAM_NAME}
+academic-publication-manager
 ```
 ## 2. More information
 
-If you want more information [README.extras.md](https://github.com/trucomanx/{REPOSITORY_NAME}/blob/main/README.extras.md)
+If you want more information [README.extras.md](https://github.com/trucomanx/AcademicPublicationManager/blob/main/README.extras.md)
 
 ## 3. Buy me a coffee
 

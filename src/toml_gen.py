@@ -7,7 +7,7 @@ import sys
 here = pathlib.Path(__file__).parent.resolve()
 sys.path.insert(0, str(here))
 
-from __MODULE_NAME__.about import (
+from academic_publication_manager.about import (
     __version__,
     __package__,
     __program_name__,
@@ -42,10 +42,9 @@ classifiers = [
 ]
 license = "GPL-3.0-only WITH Classpath-Exception-2.0 OR BSD-3-Clause"
 license-files = ["LICENSE"]
-keywords = ["writing", "translate"]
+keywords = ["writing", "research"]
 dependencies = [
-    "PyQt5",
-    "deep-consultation"
+    "PyQt5"
 ]
 
 [project.urls]
