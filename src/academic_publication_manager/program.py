@@ -276,6 +276,10 @@ class BibManager(QMainWindow):
                 change_id_action = menu.addAction(  QIcon.fromTheme("document-edit"),
                                                     "Change ID")
                 change_id_action.triggered.connect(lambda: self.change_production_id(item))
+                
+                duplicate_action = menu.addAction(  QIcon.fromTheme("edit-copy"), 
+                                                    "Duplicate Publication")
+                duplicate_action.triggered.connect(lambda: self.duplicate_production(item))
             else:  # É uma pasta
                 new_folder_action = menu.addAction( QIcon.fromTheme("folder-new"),
                                                     "New folder")
@@ -304,7 +308,98 @@ class BibManager(QMainWindow):
             "url_bugs": about.__url_bugs__
         }
         show_about_window(data,self.icon_path)
+    
+    def duplicate_production(self, item):
+        prod_id, parent_path = item.data(0, Qt.UserRole)
+        while True:
+            new_prod_id, ok = QInputDialog.getText(self, "Duplicate Publication", 
+                                                  f"Enter new ID for duplicated '{prod_id}':", 
+                                                  QLineEdit.Normal, f"{prod_id}_copy")
+            if not ok or not new_prod_id:
+                return
+            if new_prod_id == prod_id:
+                QMessageBox.warning(self, "Error", 
+                                   "The new ID must be different from the original ID.")
+                continue
+            if self.production_exists(new_prod_id):
+                QMessageBox.warning(self, "Error", 
+                                   f"The ID '{new_prod_id}' already exists. Please choose another ID.")
+                continue
+            break
 
+        # Copiar os metadados da produção original
+        from copy import deepcopy
+        original_prod = self.data["productions"].get(prod_id, {})
+        new_prod = deepcopy(original_prod)
+        self.data["productions"][new_prod_id] = new_prod
+
+        # Adicionar a nova produção à mesma pasta pai
+        current = self.data["structure"]
+        for key in parent_path:
+            current = current[key]
+        current[new_prod_id] = None
+
+        # Salvar e atualizar a interface
+        print("Saving file after duplication")
+        self.save_file()
+        
+        # Preservar o estado expandido da árvore
+        print("Collecting expanded items")
+        expanded_items = self.get_expanded_items()
+        print(f"Expanded items: {expanded_items}")
+        print("Updating tree")
+        self.update_tree()
+        print("Restoring expanded items")
+        self.restore_expanded_items(expanded_items)
+
+        # Selecionar a nova produção
+        new_item = self.find_tree_item_by_path(parent_path)
+        if new_item:
+            new_item.setExpanded(True)
+            for i in range(new_item.childCount()):
+                child = new_item.child(i)
+                if self.extract_id_from_text(child.text(0)) == new_prod_id:
+                    self.tree_widget.setCurrentItem(child)
+                    self.on_tree_item_clicked(child, 0)
+                    print(f"Selected new production: {new_prod_id}")
+                    break
+        else:
+            print("Parent item not found after update")
+
+    def get_expanded_items(self):
+        expanded = []
+        def collect_expanded(item, path):
+            # Definir text apenas para itens não-raiz
+            text = None
+            if item != self.tree_widget.invisibleRootItem():
+                text = item.text(0).split(" (")[0]
+            # Verificar se o item está expandido
+            if item.isExpanded() and text:  # Só adicionar se tiver texto (exclui raiz)
+                expanded.append(path + [text])
+            # Iterar pelos filhos
+            for i in range(item.childCount()):
+                new_path = path + [text] if text else path
+                collect_expanded(item.child(i), new_path)
+        collect_expanded(self.tree_widget.invisibleRootItem(), [])
+        return expanded
+
+    def restore_expanded_items(self, expanded_items):
+        def find_and_expand(item, path):
+            if not path:
+                return
+            # Definir text apenas para itens não-raiz
+            text = None
+            if item != self.tree_widget.invisibleRootItem():
+                text = item.text(0).split(" (")[0]
+            if text and path[0] == text:
+                item.setExpanded(True)
+                next_path = path[1:]
+            else:
+                next_path = path
+            for i in range(item.childCount()):
+                find_and_expand(item.child(i), next_path)
+        for path in expanded_items:
+            find_and_expand(self.tree_widget.invisibleRootItem(), path)
 
     def new_tree(self):
         confirm = QMessageBox.question(
@@ -581,7 +676,9 @@ class BibManager(QMainWindow):
                     json.dump(self.data, f, indent=2, ensure_ascii=False)
 
     def update_tree(self):
+        print("Clearing tree")
         self.tree_widget.clear()
+        print("Populating tree")
         self.populate_tree(self.data["structure"], self.tree_widget.invisibleRootItem())
 
     def populate_tree(self, structure, parent, path=None):
@@ -589,7 +686,7 @@ class BibManager(QMainWindow):
             path = []
         if not isinstance(structure, dict):
             return
-        for key, value in structure.items():
+        for key, value in sorted(structure.items()):  # Ordenar para consistência
             if not key:
                 continue
             item = QTreeWidgetItem(parent)

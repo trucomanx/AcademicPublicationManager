@@ -5,19 +5,25 @@
         "Métodos numéricos": {
           "MetodosNumericos1Ed": null
         },
-        "Aulicha": {
-          "pt-br": {
-            "AulichaPtBr1": null
-          },
-          "es": {},
-          "en": {}
-        },
         "A practical guide to biospeckle laser analysis": {
           "Biospeckle1": null
         }
       },
       "Chapters of books": {
         "Pub2019": null
+      },
+      "Book - Children's": {
+        "Aulicha": {
+          "pt-br": {
+            "AulichaPtBr1": null,
+            "AulichaPtBr2": null,
+            "AulichaEs1": null,
+            "AulichaEs2": null,
+            "AulichaEn1": null
+          },
+          "es": {},
+          "en": {}
+        }
       }
     }
   },
@@ -106,6 +112,82 @@
         {
           "type": "isbn",
           "value": "9-788581-270517"
+        }
+      ]
+    },
+    "AulichaPtBr2": {
+      "title": "Aulicha",
+      "subtitle": "Crônicas nos Andes",
+      "authors": [
+        "Fernando Pujaico Rivera"
+      ],
+      "year": "2024",
+      "publicator_name": "Independente",
+      "url": "https://trucomanx.github.io/aulicha/pt/index.html",
+      "type": "book",
+      "language": "Portugues",
+      "version": "2",
+      "serial_numbers": [
+        {
+          "type": "isbn",
+          "value": "978-65-01-12523-7"
+        }
+      ]
+    },
+    "AulichaEs1": {
+      "title": "Aulicha",
+      "subtitle": "Crónicas en los Andes",
+      "authors": [
+        "Fernando Pujaico Rivera"
+      ],
+      "year": "2020",
+      "publicator_name": "Independente",
+      "url": "https://trucomanx.github.io/aulicha/es/index.html",
+      "type": "book",
+      "language": "Español",
+      "version": "1",
+      "serial_numbers": [
+        {
+          "type": "isbn",
+          "value": "978-65-00-13275-5"
+        }
+      ]
+    },
+    "AulichaEs2": {
+      "title": "Aulicha",
+      "subtitle": "Crónicas en los Andes",
+      "authors": [
+        "Fernando Pujaico Rivera"
+      ],
+      "year": "2024",
+      "publicator_name": "Independente",
+      "url": "https://trucomanx.github.io/aulicha/es/index.html",
+      "type": "book",
+      "language": "Español",
+      "version": "2",
+      "serial_numbers": [
+        {
+          "type": "isbn",
+          "value": "978-65-01-16772-5"
+        }
+      ]
+    },
+    "AulichaEn1": {
+      "title": "Aulicha",
+      "subtitle": "Chronicles in the Andes",
+      "authors": [
+        "Fernando Pujaico Rivera"
+      ],
+      "year": "2024",
+      "publicator_name": "Independente",
+      "url": "https://trucomanx.github.io/aulicha/en/index.html",
+      "type": "book",
+      "language": "English",
+      "version": "1",
+      "serial_numbers": [
+        {
+          "type": "isbn",
+          "value": "978-65-01-14293-7"
         }
       ]
     }
