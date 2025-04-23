@@ -25,14 +25,12 @@ class CustomTreeWidget(QTreeWidget):
         self.setSelectionMode(QTreeWidget.SingleSelection)
 
     def dragEnterEvent(self, event):
-        print("dragEnterEvent")
         if event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
             event.acceptProposedAction()
         else:
             event.ignore()
 
     def dragMoveEvent(self, event):
-        print("dragMoveEvent")
         item = self.itemAt(event.pos())
         if item and item.data(0, Qt.UserRole):  # Não permitir soltar em produção
             event.ignore()
@@ -40,13 +38,11 @@ class CustomTreeWidget(QTreeWidget):
             event.acceptProposedAction()
 
     def dropEvent(self, event):
-        print("dropEvent")
         source_item = self.currentItem()
         drop_pos = self.dropIndicatorPosition()
         target_item = self.itemAt(event.pos())
 
         if not source_item:
-            print("No source item selected")
             event.ignore()
             return
 
@@ -56,7 +52,6 @@ class CustomTreeWidget(QTreeWidget):
                 parent_item = target_item.parent() or self.invisibleRootItem()
             else:  # OnItem
                 if target_item.data(0, Qt.UserRole):  # Não permitir soltar em produção
-                    print("Cannot drop on a production")
                     event.ignore()
                     return
                 parent_item = target_item
@@ -66,36 +61,29 @@ class CustomTreeWidget(QTreeWidget):
         # Obter os caminhos do item origem e destino
         source_path = self.main_window.get_item_path(source_item)
         target_path = self.main_window.get_item_path(parent_item)
-        print(f"Source path: {source_path}")
-        print(f"Target path: {target_path}")
+
 
         # Verificar se o movimento é válido
         if source_path == target_path or source_path in [target_path + [source_path[-1]]]:
-            print("Invalid move: same location or self-drop")
             event.ignore()
             return
 
         # Determinar se o item é uma pasta ou produção
         source_name = source_path[-1]
         is_production = bool(source_item.data(0, Qt.UserRole))
-        print(f"Original source_name: {source_name}, is_production: {is_production}")
 
         # Para produções, extrair o ID real
         if is_production:
             source_name = self.main_window.extract_id_from_text(source_item.text(0))
-            print(f"Extracted production ID: {source_name}")
 
         # Obter a estrutura do item origem
         current = self.main_window.data["structure"]
         for key in source_path[:-1]:
             if key not in current:
-                print(f"Source path invalid: {key} not in structure")
                 event.ignore()
                 return
             current = current[key]
-        print(f"Current structure at source: {current}")
         if source_name not in current:
-            print(f"Source name {source_name} not in current structure")
             event.ignore()
             return
         source_data = deepcopy(current[source_name])  # Fazer cópia profunda
@@ -104,20 +92,16 @@ class CustomTreeWidget(QTreeWidget):
         current = self.main_window.data["structure"]
         for key in target_path:
             if key not in current:
-                print(f"Target path invalid: {key} not in structure")
                 event.ignore()
                 return
             current = current[key]
         if not isinstance(current, dict):
-            print("Target is not a folder")
             event.ignore()
             return
-        print(f"Current structure at target: {current}")
 
         # Adicionar o item no destino
         if is_production:
             if source_name not in self.main_window.data["productions"]:
-                print(f"Production {source_name} not in productions")
                 event.ignore()
                 return
             current[source_name] = None
@@ -131,23 +115,26 @@ class CustomTreeWidget(QTreeWidget):
         current.pop(source_name)  # Usar source_name (ID para produções, nome para pastas)
 
         # Salvar o arquivo
-        print("Saving file")
         self.main_window.save_file()
+
+        # Preservar o estado expandido da árvore
+        expanded_items = self.main_window.get_expanded_items()
 
         # Atualizar a árvore com atraso
         def update_tree_later():
-            print("Updating tree")
             self.main_window.update_tree()
+            self.main_window.restore_expanded_items(expanded_items)
             new_item = self.main_window.find_tree_item_by_path(target_path + [source_name])
             if new_item:
-                print(f"Selecting moved item at {target_path + [source_name]}")
                 self.setCurrentItem(new_item)
+                # Expandir a pasta destino para mostrar a produção movida
+                parent_item = new_item.parent() or self.tree_widget.invisibleRootItem()
+                parent_item.setExpanded(True)
             else:
                 print("Moved item not found after update")
         QTimer.singleShot(50, update_tree_later)
 
         event.acceptProposedAction()
-
 
 
 
