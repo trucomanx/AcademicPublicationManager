@@ -2,11 +2,12 @@
   "productions": {
     "pujaico_2023_v1": {
       "title": "Logic for Kids",
+      "subtitle": "",
       "authors": [
         "Fernando Pujaico Rivera"
       ],
       "year": "2024",
-      "publication_name": "Editorial Lógica Infantil",
+      "publicator_name": "Editorial Lógica Infantil",
       "url": "https://example.com/logic-kids",
       "type": "book",
       "language": "English",
@@ -20,12 +21,13 @@
     },
     "smith_2022_v3.1": {
       "title": "Advanced AI Research",
+      "subtitle": "",
       "authors": [
         "John Smith",
         "Ana Doe"
       ],
       "year": 2022,
-      "publication_name": "AI Journal",
+      "publicator_name": "AI Journal",
       "url": "https://doi.org/10.1000/ai.journal.2022",
       "type": "article",
       "language": "English",
@@ -39,11 +41,12 @@
     },
     "test1_2025": {
       "title": "New Publication",
+      "subtitle": "",
       "authors": [
         "Author Name"
       ],
       "year": "2020",
-      "publication_name": "Sample Journal",
+      "publicator_name": "Sample Journal",
       "url": "https://example.com",
       "type": "article",
       "language": "English",

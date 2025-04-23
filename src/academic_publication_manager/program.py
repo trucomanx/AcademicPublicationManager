@@ -1,24 +1,150 @@
 import sys
 import json
 import uuid
+import os
 from datetime import datetime
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSplitter, QTreeWidget, QTreeWidgetItem,
                              QTableWidget, QTableWidgetItem, QLineEdit, QVBoxLayout, QHBoxLayout,
                              QWidget, QLabel, QTextEdit, QPushButton, QFileDialog, QScrollArea,
                              QMenu, QInputDialog, QMessageBox, QToolButton)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
+import academic_publication_manager.about as about
+from academic_publication_manager.modules.wabout import show_about_window
+
+from copy import deepcopy
+
+class CustomTreeWidget(QTreeWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.main_window = parent  # Referência à BibManager
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDragDropMode(QTreeWidget.DragDrop)  # Usar DragDrop em vez de InternalMove
+        self.setDefaultDropAction(Qt.MoveAction)
+        self.setSelectionMode(QTreeWidget.SingleSelection)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        item = self.itemAt(event.pos())
+        if item and item.data(0, Qt.UserRole):  # Não permitir soltar em produção
+            event.ignore()
+        else:
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        source_item = self.currentItem()
+        drop_pos = self.dropIndicatorPosition()
+        target_item = self.itemAt(event.pos())
+
+        if not source_item:
+            event.ignore()
+            return
+
+        # Determinar o item pai de destino
+        if target_item:
+            if drop_pos in (QTreeWidget.AboveItem, QTreeWidget.BelowItem):
+                parent_item = target_item.parent() or self.invisibleRootItem()
+            else:  # OnItem
+                if target_item.data(0, Qt.UserRole):  # Não permitir soltar em produção
+                    event.ignore()
+                    return
+                parent_item = target_item
+        else:
+            parent_item = self.invisibleRootItem()
+
+        # Obter os caminhos do item origem e destino
+        source_path = self.main_window.get_item_path(source_item)
+        target_path = self.main_window.get_item_path(parent_item)
+
+        # Verificar se o movimento é válido
+        if source_path == target_path or source_path in [target_path + [source_path[-1]]]:
+            event.ignore()
+            return
+
+        # Determinar se o item é uma pasta ou produção
+        source_name = source_path[-1]
+        is_production = bool(source_item.data(0, Qt.UserRole))
+
+        # Obter a estrutura do item origem
+        current = self.main_window.data["structure"]
+        for key in source_path[:-1]:
+            if key not in current:
+                event.ignore()
+                return
+            current = current[key]
+        if source_name not in current:
+            event.ignore()
+            return
+        source_data = deepcopy(current[source_name])  # Fazer cópia profunda
+
+        # Verificar se o destino é válido
+        current = self.main_window.data["structure"]
+        for key in target_path:
+            if key not in current:
+                event.ignore()
+                return
+            current = current[key]
+        if not isinstance(current, dict):
+            event.ignore()
+            return
+
+        # Adicionar o item no destino
+        if is_production:
+            if source_name not in self.main_window.data["productions"]:
+                event.ignore()
+                return
+            current[source_name] = None
+        else:
+            current[source_name] = source_data
+
+        # Remover o item da origem
+        current = self.main_window.data["structure"]
+        for key in source_path[:-1]:
+            current = current[key]
+        current.pop(source_name)
+
+        # Salvar o arquivo
+        self.main_window.save_file()
+
+        # Atualizar a árvore com atraso
+        def update_tree_later():
+            self.main_window.update_tree()
+            new_item = self.main_window.find_tree_item_by_path(target_path + [source_name])
+            if new_item:
+                self.setCurrentItem(new_item)
+            else:
+                print("Moved item not found after update")
+        QTimer.singleShot(50, update_tree_later)  # Aumentar o atraso para 50ms
+
+        event.acceptProposedAction()
+
+
 
 class BibManager(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Gerenciador de Produções Bibliográficas")
+        self.setWindowTitle(about.__program_name__)
         self.setGeometry(100, 100, 1200, 600)
+        
+        ## Icon
+        # Get base directory for icons
+        base_dir_path = os.path.dirname(os.path.abspath(__file__))
+        self.icon_path = os.path.join(base_dir_path, 'icons', 'logo.png')
+        self.setWindowIcon(QIcon(self.icon_path)) 
+        
+        
         self.data = {"structure": {"Root":{}}, "productions": {}}
         self.current_file = None
         self.current_prod_id = None
         
         self.init_toolbar()
+        self.init_menubar()
         self.init_ui()
         
         
@@ -32,8 +158,17 @@ class BibManager(QMainWindow):
         toolbar = self.addToolBar("Main Toolbar")
 
         # Botão Nova Árvore
+        about_btn = QToolButton()
+        about_btn.setText("About")
+        about_btn.clicked.connect(self.about_func)
+        about_btn.setIcon(QIcon.fromTheme("help-about"))
+        about_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        toolbar.addWidget(about_btn)
+        
+
+        # Botão Nova Árvore
         new_tree_btn = QToolButton()
-        new_tree_btn.setText("Nova Árvore")
+        new_tree_btn.setText("New tree")
         new_tree_btn.clicked.connect(self.new_tree)
         new_tree_btn.setIcon(QIcon.fromTheme("document-new"))
         new_tree_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
@@ -41,7 +176,7 @@ class BibManager(QMainWindow):
 
         # Botão Abrir
         open_btn = QToolButton()
-        open_btn.setText("Abrir")
+        open_btn.setText("Open tree")
         open_btn.clicked.connect(self.open_file)
         open_btn.setIcon(QIcon.fromTheme("document-open"))
         open_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
@@ -49,12 +184,27 @@ class BibManager(QMainWindow):
 
         # Botão Salvar
         save_btn = QToolButton()
-        save_btn.setText("Salvar")
+        save_btn.setText("Save tree")
         save_btn.clicked.connect(self.save_file)
         save_btn.setIcon(QIcon.fromTheme("document-save"))
         save_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         toolbar.addWidget(save_btn)
+
+    def init_menubar(self):
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("Arquive")
+
+        open_action = file_menu.addAction("Open")
+        open_action.triggered.connect(self.open_file)
         
+        save_action = file_menu.addAction("Save")
+        save_action.triggered.connect(self.save_file)
+        
+        new_tree_action = file_menu.addAction("New tree")
+        new_tree_action.triggered.connect(self.new_tree)
+
+
+
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -70,9 +220,10 @@ class BibManager(QMainWindow):
         horizontal_splitter = QSplitter(Qt.Horizontal)
 
         top_layout.addWidget(horizontal_splitter)
-       
-        self.tree_widget = QTreeWidget()
-        self.tree_widget.setHeaderLabel("Estrutura de Pastas")
+
+        # Usar CustomTreeWidget em vez de QTreeWidget
+        self.tree_widget = CustomTreeWidget(self)  # Passar self como parent para acessar métodos de BibManager
+        self.tree_widget.setHeaderLabel("Folder structure")
         self.tree_widget.itemClicked.connect(self.on_tree_item_clicked)
         self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_widget.customContextMenuRequested.connect(self.show_context_menu)
@@ -89,7 +240,7 @@ class BibManager(QMainWindow):
         horizontal_splitter.addWidget(scroll_area)
 
 
-        self.save_metadata_btn = QPushButton("Salvar Metadados")
+        self.save_metadata_btn = QPushButton("Save Metadata")
         self.save_metadata_btn.clicked.connect(self.save_metadata)
         metadata_layout.addWidget(self.save_metadata_btn)
         self.save_metadata_btn.setEnabled(False)
@@ -100,7 +251,7 @@ class BibManager(QMainWindow):
 
         self.table_widget = QTableWidget()
         self.table_widget.setColumnCount(2)
-        self.table_widget.setHorizontalHeaderLabels(["Título", "ID"])
+        self.table_widget.setHorizontalHeaderLabels(["Title", "ID"])
         self.table_widget.cellClicked.connect(self.on_table_row_clicked)
         bottom_layout.addWidget(self.table_widget)
 
@@ -111,46 +262,54 @@ class BibManager(QMainWindow):
 
 
         horizontal_splitter.setSizes([300, 300])
-
-
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu("Arquivo")
-
-        open_action = file_menu.addAction("Abrir")
-        open_action.triggered.connect(self.open_file)
-        
-        save_action = file_menu.addAction("Salvar")
-        save_action.triggered.connect(self.save_file)
-        
-        new_tree_action = file_menu.addAction("Nova Árvore")
-        new_tree_action.triggered.connect(self.new_tree)
-
+    
+    
     def show_context_menu(self, position):
         item = self.tree_widget.itemAt(position)
         if item:
             menu = QMenu()
-            delete_action = menu.addAction("Apagar")
+            delete_action = menu.addAction( QIcon.fromTheme("edit-delete"),
+                                            "Delete")
             delete_action.triggered.connect(lambda: self.delete_item(item))
             
             if item.data(0, Qt.UserRole):  # É uma produção (folha)
-                change_id_action = menu.addAction("Alterar ID")
+                change_id_action = menu.addAction(  QIcon.fromTheme("document-edit"),
+                                                    "Change ID")
                 change_id_action.triggered.connect(lambda: self.change_production_id(item))
             else:  # É uma pasta
-                new_folder_action = menu.addAction("Nova Pasta")
+                new_folder_action = menu.addAction( QIcon.fromTheme("folder-new"),
+                                                    "New folder")
                 new_folder_action.triggered.connect(lambda: self.create_new_folder(item))
                 
-                new_production_action = menu.addAction("Nova Produção")
+                new_production_action = menu.addAction( QIcon.fromTheme("document-new"),
+                                                        "New production")
                 new_production_action.triggered.connect(lambda: self.create_new_production(item))
                 
-                rename_folder_action = menu.addAction("Renomear Pasta")
+                rename_folder_action = menu.addAction(  QIcon.fromTheme("folder-visiting"),
+                                                        "Rename folder")
                 rename_folder_action.triggered.connect(lambda: self.rename_folder(item))
                 
             menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
+    def about_func(self):
+        data={
+            "version": about.__version__,
+            "package": about.__package__,
+            "program_name": about.__program_name__,
+            "author": about.__author__,
+            "email": about.__email__,
+            "description": about.__description__,
+            "url_source": about.__url_source__,
+            "url_funding": about.__url_funding__,
+            "url_bugs": about.__url_bugs__
+        }
+        show_about_window(data,self.icon_path)
+
+
     def new_tree(self):
         confirm = QMessageBox.question(
-            self, "Nova Árvore",
-            "Deseja apagar toda a estrutura atual e começar do zero?",
+            self, "New tree",
+            "Do you want to erase the entire current structure and start from scratch?",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if confirm == QMessageBox.Yes:
@@ -165,7 +324,7 @@ class BibManager(QMainWindow):
             self.update_tree()
 
     def create_new_folder(self, parent_item):
-        folder_name, ok = QInputDialog.getText(self, "Nova Pasta", "Nome da nova pasta:")
+        folder_name, ok = QInputDialog.getText(self, "New tree", "Name of the new folder:")
         if ok and folder_name:
             path = self.get_item_path(parent_item)
             current = self.data["structure"]
@@ -181,20 +340,21 @@ class BibManager(QMainWindow):
 
     def create_new_production(self, parent_item):
         while True:
-            prod_id, ok = QInputDialog.getText(self, "Nova Produção", "Digite o ID da nova produção:")
+            prod_id, ok = QInputDialog.getText(self, "New production", "Enter the new production ID:")
             if not ok or not prod_id:
                 return
             if self.production_exists(prod_id):
-                QMessageBox.warning(self, "Erro", f"O ID '{prod_id}' já existe. Por favor, escolha outro ID.")
+                QMessageBox.warning(self, "Erro", f"The ID '{prod_id}' already exists. Please choose another ID.")
                 continue
             break
         
         parent_path = self.get_item_path(parent_item)
         fake_production = {
             "title": "New Publication",
+            "subtitle": "",
             "authors": ["Author Name"],
             "year": datetime.now().year,
-            "publication_name": "Sample Journal",
+            "publicator_name": "Sample Journal",
             "url": "https://example.com",
             "type": "article",
             "language": "English",
@@ -220,13 +380,13 @@ class BibManager(QMainWindow):
     def rename_folder(self, item):
         old_name = item.text(0).split(" (")[0]
         path = self.get_item_path(item)
-        new_name, ok = QInputDialog.getText(self, "Renomear Pasta", "Novo nome da pasta:", QLineEdit.Normal, old_name)
+        new_name, ok = QInputDialog.getText(self, "Rename folder", "New folder name:", QLineEdit.Normal, old_name)
         if ok and new_name and new_name != old_name:
             current = self.data["structure"]
             for key in path[:-1]:
                 current = current[key]
             if new_name in current:
-                QMessageBox.warning(self, "Erro", f"A pasta '{new_name}' já existe neste nível. Escolha outro nome.")
+                QMessageBox.warning(self, "Error", f"The folder '{new_name}' already exists at this level. Please choose another name.")
                 return
             
             current[new_name] = current.pop(old_name)
@@ -246,8 +406,8 @@ class BibManager(QMainWindow):
         old_prod_id, parent_path = item.data(0, Qt.UserRole)
         while True:
             new_prod_id, ok = QInputDialog.getText( self, 
-                                                    "Alterar ID", 
-                                                    f"Digite o novo ID para '{old_prod_id}':", 
+                                                    "Change ID", 
+                                                    f"Enter new ID for '{old_prod_id}':", 
                                                     QLineEdit.Normal, 
                                                     old_prod_id)
             if not ok or not new_prod_id:
@@ -256,8 +416,8 @@ class BibManager(QMainWindow):
                 return
             if self.production_exists(new_prod_id):
                 QMessageBox.warning(self, 
-                                    "Erro", 
-                                    f"O ID '{new_prod_id}' já existe. Por favor, escolha outro ID.")
+                                    "Error", 
+                                    f"The ID '{new_prod_id}' already exists. Please choose another ID.")
                 continue
             break
 
@@ -303,8 +463,8 @@ class BibManager(QMainWindow):
         if data:  # É uma produção (folha)
             prod_id, parent_path = data
             confirm = QMessageBox.question(
-                self, "Confirmar Exclusão",
-                f"Deseja apagar a produção '{item.text(0)}'?",
+                self, "Confirm Deletion",
+                f"Do you want to delete the output '{item.text(0)}'?",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No
             )
             if confirm == QMessageBox.No:
@@ -322,8 +482,8 @@ class BibManager(QMainWindow):
                 self.save_metadata_btn.setEnabled(False)
         else:  # É uma pasta
             confirm = QMessageBox.question(
-                self, "Confirmar Exclusão",
-                f"Deseja apagar a pasta '{item_text}' e todas as suas subpastas e produções?",
+                self, "Confirm Deletion",
+                f"Do you want to delete the folder '{item_text}' and all its subfolders and productions?",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No
             )
             if confirm == QMessageBox.No:
@@ -397,7 +557,7 @@ class BibManager(QMainWindow):
         return current_item
 
     def open_file(self):
-        file_name, _ = QFileDialog.getOpenFileName(self, "Abrir Arquivo JSON", "", "JSON Files (*.json)")
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open JSON File", "", "JSON Files (*.json)")
         if file_name:
             with open(file_name, 'r', encoding='utf-8') as f:
                 self.data = json.load(f)
@@ -414,7 +574,7 @@ class BibManager(QMainWindow):
             with open(self.current_file, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, indent=2, ensure_ascii=False)
         else:
-            file_name, _ = QFileDialog.getSaveFileName(self, "Salvar Arquivo JSON", "", "JSON Files (*.json)")
+            file_name, _ = QFileDialog.getSaveFileName(self, "Save JSON File", "", "JSON Files (*.json)")
             if file_name:
                 self.current_file = file_name
                 with open(self.current_file, 'w', encoding='utf-8') as f:
@@ -519,7 +679,7 @@ class BibManager(QMainWindow):
 
     def save_metadata(self):
         if not self.current_prod_id:
-            QMessageBox.warning(self, "Aviso", "Nenhuma produção selecionada para salvar os metadados.")
+            QMessageBox.warning(self, "Warning", "No production selected to save metadata.")
             return
         prod_id, path = self.current_prod_id
         prod = self.data["productions"].get(prod_id, {})
