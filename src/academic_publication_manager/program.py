@@ -994,6 +994,7 @@ def main():
             return
 
     app = QApplication(sys.argv)
+    app.setApplicationName(about.__package__) 
     window = BibManager()
     window.show()
     sys.exit(app.exec_())
