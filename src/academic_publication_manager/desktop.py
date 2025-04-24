@@ -1,5 +1,5 @@
 import os
-import __MODULE_NAME__.about as about
+import academic_publication_manager.about as about
 import subprocess
 
 

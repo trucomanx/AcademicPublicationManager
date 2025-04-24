@@ -2,17 +2,22 @@ import sys
 import json
 import uuid
 import os
+import signal
 from datetime import datetime
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSplitter, QTreeWidget, QTreeWidgetItem,
                              QTableWidget, QTableWidgetItem, QLineEdit, QVBoxLayout, QHBoxLayout,
                              QWidget, QLabel, QTextEdit, QPushButton, QFileDialog, QScrollArea,
                              QMenu, QInputDialog, QMessageBox, QToolButton)
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QBrush, QColor, QIcon
+
+
 import academic_publication_manager.about as about
+from academic_publication_manager.desktop import create_desktop_file, create_desktop_directory, create_desktop_menu
 from academic_publication_manager.modules.wabout import show_about_window
 
 from copy import deepcopy
+
 
 class CustomTreeWidget(QTreeWidget):
     def __init__(self, parent=None):
@@ -23,6 +28,7 @@ class CustomTreeWidget(QTreeWidget):
         self.setDragDropMode(QTreeWidget.DragDrop)
         self.setDefaultDropAction(Qt.MoveAction)
         self.setSelectionMode(QTreeWidget.SingleSelection)
+        self._highlighted_item = None  # Rastrear o item destacado
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
@@ -32,15 +38,37 @@ class CustomTreeWidget(QTreeWidget):
 
     def dragMoveEvent(self, event):
         item = self.itemAt(event.pos())
+        # Limpar destaque do item anterior
+        if self._highlighted_item:
+            self._highlighted_item.setBackground(0, QBrush())  # Fundo transparente
+            self._highlighted_item = None
+
         if item and item.data(0, Qt.UserRole):  # Não permitir soltar em produção
             event.ignore()
         else:
+            # Destacar o item de destino válido
+            target_item = item if item else self.invisibleRootItem()
+            if target_item != self.invisibleRootItem():  # Não destacar a raiz diretamente
+                self._highlighted_item = target_item
+                self._highlighted_item.setBackground(0, QBrush(QColor("#FFFF99")))  # Amarelo claro
             event.acceptProposedAction()
+
+    def dragLeaveEvent(self, event):
+        # Limpar destaque quando o arrasto sai da árvore
+        if self._highlighted_item:
+            self._highlighted_item.setBackground(0, QBrush())  # Fundo transparente
+            self._highlighted_item = None
+        event.accept()
 
     def dropEvent(self, event):
         source_item = self.currentItem()
         drop_pos = self.dropIndicatorPosition()
         target_item = self.itemAt(event.pos())
+
+        # Limpar destaque ao soltar
+        if self._highlighted_item:
+            self._highlighted_item.setBackground(0, QBrush())  # Fundo transparente
+            self._highlighted_item = None
 
         if not source_item:
             event.ignore()
@@ -61,7 +89,6 @@ class CustomTreeWidget(QTreeWidget):
         # Obter os caminhos do item origem e destino
         source_path = self.main_window.get_item_path(source_item)
         target_path = self.main_window.get_item_path(parent_item)
-
 
         # Verificar se o movimento é válido
         if source_path == target_path or source_path in [target_path + [source_path[-1]]]:
@@ -132,9 +159,13 @@ class CustomTreeWidget(QTreeWidget):
                 parent_item.setExpanded(True)
             else:
                 print("Moved item not found after update")
-        QTimer.singleShot(50, update_tree_later)
+        QTimer.singleShot(100, update_tree_later)
 
         event.acceptProposedAction()
+
+
+
+
 
 
 
@@ -155,8 +186,8 @@ class BibManager(QMainWindow):
         self.current_file = None
         self.current_prod_id = None
         
-        self.init_toolbar()
         self.init_menubar()
+        self.init_toolbar()
         self.init_ui()
         
         
@@ -165,6 +196,24 @@ class BibManager(QMainWindow):
         self.metadata_panel.setEnabled(False)
         self.save_metadata_btn.setEnabled(False)
         self.current_prod_id = None
+
+    def init_menubar(self):
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("Arquive")
+
+        open_action = file_menu.addAction("Open tree from json")
+        open_action.triggered.connect(self.open_file)
+        
+        save_action = file_menu.addAction("Save tree in json")
+        save_action.triggered.connect(self.save_file)
+        
+        new_tree_action = file_menu.addAction("New tree")
+        new_tree_action.triggered.connect(self.new_tree)
+
+        gabout_menu = menubar.addMenu("About")
+        about_program_action = gabout_menu.addAction("About program")
+        about_program_action.triggered.connect(self.about_func)
+
 
     def init_toolbar(self):
         toolbar = self.addToolBar("Main Toolbar")
@@ -202,18 +251,6 @@ class BibManager(QMainWindow):
         save_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         toolbar.addWidget(save_btn)
 
-    def init_menubar(self):
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu("Arquive")
-
-        open_action = file_menu.addAction("Open")
-        open_action.triggered.connect(self.open_file)
-        
-        save_action = file_menu.addAction("Save")
-        save_action.triggered.connect(self.save_file)
-        
-        new_tree_action = file_menu.addAction("New tree")
-        new_tree_action.triggered.connect(self.new_tree)
 
 
 
@@ -352,16 +389,11 @@ class BibManager(QMainWindow):
         current[new_prod_id] = None
 
         # Salvar e atualizar a interface
-        print("Saving file after duplication")
         self.save_file()
         
         # Preservar o estado expandido da árvore
-        print("Collecting expanded items")
         expanded_items = self.get_expanded_items()
-        print(f"Expanded items: {expanded_items}")
-        print("Updating tree")
         self.update_tree()
-        print("Restoring expanded items")
         self.restore_expanded_items(expanded_items)
 
         # Selecionar a nova produção
@@ -373,7 +405,6 @@ class BibManager(QMainWindow):
                 if self.extract_id_from_text(child.text(0)) == new_prod_id:
                     self.tree_widget.setCurrentItem(child)
                     self.on_tree_item_clicked(child, 0)
-                    print(f"Selected new production: {new_prod_id}")
                     break
         else:
             print("Parent item not found after update")
@@ -688,9 +719,7 @@ class BibManager(QMainWindow):
                     json.dump(self.data, f, indent=2, ensure_ascii=False)
 
     def update_tree(self):
-        print("Clearing tree")
         self.tree_widget.clear()
-        print("Populating tree")
         self.populate_tree(self.data["structure"], self.tree_widget.invisibleRootItem())
 
     def populate_tree(self, structure, parent, path=None):
@@ -828,8 +857,31 @@ class BibManager(QMainWindow):
             return None
         return search_path(self.data["structure"], [])
 
-if __name__ == "__main__":
+def main():
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    create_desktop_directory()    
+    create_desktop_menu()
+    create_desktop_file('~/.local/share/applications')
+    
+    for n in range(len(sys.argv)):
+        if sys.argv[n] == "--autostart":
+            create_desktop_directory(overwrite = True)
+            create_desktop_menu(overwrite = True)
+            create_desktop_file('~/.config/autostart', overwrite=True)
+            return
+        if sys.argv[n] == "--applications":
+            create_desktop_directory(overwrite = True)
+            create_desktop_menu(overwrite = True)
+            create_desktop_file('~/.local/share/applications', overwrite=True)
+            return
+
     app = QApplication(sys.argv)
     window = BibManager()
     window.show()
     sys.exit(app.exec_())
+    
+
+if __name__ == "__main__":
+    main()
+
