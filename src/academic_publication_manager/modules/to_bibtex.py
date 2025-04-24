@@ -1,3 +1,63 @@
+import bibtexparser
+
+def bibtex_to_dicts(bibtex_string: str) -> dict:
+    bib_database = bibtexparser.loads(bibtex_string)
+    result = {}
+
+    pub_field_by_type = {
+        "article": "journal",
+        "phdthesis": "school",
+        "mastersthesis": "school",
+        "inproceedings": "booktitle",
+        "techreport": "institution",
+        "book": "publisher",
+        "manual": "organization",
+    }
+
+    for entry in bib_database.entries:
+        entry_type = entry.get("ENTRYTYPE", "misc").lower()
+        entry_key = entry.get("ID", "unknown")
+
+        # Autores
+        authors = entry.get("author", "")
+        authors_list = [a.strip() for a in authors.split(" and ")] if authors else []
+
+        # Título e subtítulo
+        full_title = entry.get("title", "").strip()
+        if ": " in full_title:
+            title, subtitle = full_title.split(": ", 1)
+        elif " – " in full_title:
+            title, subtitle = full_title.split(" – ", 1)
+        else:
+            title, subtitle = full_title, ""
+
+        # Publicador
+        pub_field = pub_field_by_type.get(entry_type, None)
+        publicator_name = entry.get(pub_field, "") if pub_field else ""
+
+        # Serial numbers
+        serial_numbers = []
+        for k in ["isbn", "issn", "doi"]:
+            if k in entry:
+                serial_numbers.append({"type": k, "value": entry[k].strip()})
+
+        # Criar dicionário no seu formato
+        result[entry_key] = {
+            "type": entry_type,
+            "title": title.strip(),
+            "subtitle": subtitle.strip(),
+            "authors": authors_list,
+            "year": entry.get("year", "").strip(),
+            "url": entry.get("url", "").strip(),
+            "language": entry.get("language", "").strip(),
+            "version": entry.get("edition", "").strip(),
+            "publicator_name": publicator_name.strip(),
+            "serial_numbers": serial_numbers
+        }
+
+    return result
+
+
 def dict_to_bibtex(entry: dict, citekey: str = "ref") -> str:
     def is_valid(value):
         return isinstance(value, str) and value.strip() != ""

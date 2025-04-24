@@ -3,7 +3,8 @@ import json
 import uuid
 import os
 import signal
-from datetime import datetime
+import copy
+
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSplitter, QTreeWidget, QTreeWidgetItem,
                              QTableWidget, QTableWidgetItem, QLineEdit, QVBoxLayout, QHBoxLayout,
                              QWidget, QLabel, QTextEdit, QPushButton, QFileDialog, QScrollArea,
@@ -14,8 +15,10 @@ from PyQt5.QtGui import QBrush, QColor, QIcon
 
 import academic_publication_manager.about as about
 from academic_publication_manager.desktop import create_desktop_file, create_desktop_directory, create_desktop_menu
-from academic_publication_manager.modules.wabout    import show_about_window
-from academic_publication_manager.modules.to_bibtex import id_list_to_bibtex_string
+from academic_publication_manager.modules.wabout     import show_about_window
+from academic_publication_manager.modules.to_bibtex  import id_list_to_bibtex_string, bibtex_to_dicts
+from academic_publication_manager.modules.production import fake_production
+
 from copy import deepcopy
 
 
@@ -290,7 +293,7 @@ class BibManager(QMainWindow):
 
 
         self.save_metadata_btn = QPushButton("Save Metadata")
-        self.save_metadata_btn.clicked.connect(self.save_metadata)
+        self.save_metadata_btn.clicked.connect(self.save_metadata_func)
         metadata_layout.addWidget(self.save_metadata_btn)
         self.save_metadata_btn.setEnabled(False)
 
@@ -323,11 +326,8 @@ class BibManager(QMainWindow):
                                             "Delete")
             delete_action.triggered.connect(lambda: self.delete_item(item))
             
-            # Save bibfile
-            saveasbib_action = menu.addAction( QIcon.fromTheme("document-save-as"),
-                                            "Save as *.bib")
-            saveasbib_action.triggered.connect(lambda: self.saveasbib_item(item))
-            
+            # Separator
+            menu.addSeparator()
             
             if item.data(0, Qt.UserRole):  # É uma produção (folha)
                 
@@ -340,6 +340,10 @@ class BibManager(QMainWindow):
                 duplicate_action = menu.addAction(  QIcon.fromTheme("edit-copy"), 
                                                     "Duplicate Publication")
                 duplicate_action.triggered.connect(lambda: self.duplicate_production(item))
+                
+                # Separator
+                menu.addSeparator()
+                
             else:  # É uma pasta
                 # New folder
                 new_folder_action = menu.addAction( QIcon.fromTheme("folder-new"),
@@ -355,6 +359,23 @@ class BibManager(QMainWindow):
                 rename_folder_action = menu.addAction(  QIcon.fromTheme("folder-visiting"),
                                                         "Rename folder")
                 rename_folder_action.triggered.connect(lambda: self.rename_folder(item))
+                
+                # Separator
+                menu.addSeparator()
+                
+                # load bibfile
+                loadfrombib_action = menu.addAction( QIcon.fromTheme("document-open"),
+                                                "Load from *.bib")
+                loadfrombib_action.triggered.connect(lambda: self.loadfrombib_item(item))
+            
+            
+            
+            # Save bibfile
+            saveasbib_action = menu.addAction( QIcon.fromTheme("document-save-as"),
+                                            "Save as *.bib")
+            saveasbib_action.triggered.connect(lambda: self.saveasbib_item(item))
+            
+            
                 
             menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
@@ -490,6 +511,14 @@ class BibManager(QMainWindow):
                 new_parent_item.setExpanded(True)
                 self.tree_widget.setCurrentItem(new_parent_item)
 
+    def add_production_to_structure_and_productions(self,parent_path,prod_id,production):
+        current = self.data["structure"]
+        for key in parent_path:
+            current = current[key]
+        
+        current[prod_id] = None
+        self.data["productions"][prod_id] = production
+
     def create_new_production(self, parent_item):
         while True:
             prod_id, ok = QInputDialog.getText(self, "New production", "Enter the new production ID:")
@@ -501,23 +530,11 @@ class BibManager(QMainWindow):
             break
         
         parent_path = self.get_item_path(parent_item)
-        fake_production = {
-            "title": "New Publication",
-            "subtitle": "",
-            "authors": ["Author Name"],
-            "year": datetime.now().year,
-            "publicator_name": "Sample Journal",
-            "url": "https://example.com",
-            "type": "article",
-            "language": "English",
-            "version": 1,
-            "serial_numbers": [{"type": "doi", "value": "10.1000/sample"}]
-        }
-        current = self.data["structure"]
-        for key in parent_path:
-            current = current[key]
-        current[prod_id] = None
-        self.data["productions"][prod_id] = fake_production
+
+        self.add_production_to_structure_and_productions(   parent_path,
+                                                            prod_id,
+                                                            copy.deepcopy(fake_production))
+        
         self.save_file()
         self.update_tree()
         new_parent_item = self.find_tree_item_by_path(parent_path)
@@ -607,6 +624,27 @@ class BibManager(QMainWindow):
             return text[text.rfind("(")+1:-1]
         return text
 
+    def loadfrombib_item(self, item):
+        data = item.data(0, Qt.UserRole)
+        item_text = item.text(0)
+        path = self.get_item_path(item)
+        
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open BIB File", "", "BIB Files (*.bib)")
+        if file_name:
+            
+            with open(file_name, 'r') as myfile:
+                file_content = myfile.read()
+            
+            dicts = bibtex_to_dicts(file_content)
+
+            for prod_id, production in dicts.items():
+                self.add_production_to_structure_and_productions(   path,
+                                                                    prod_id,
+                                                                    copy.deepcopy(production))
+
+        self.save_file()
+        self.update_tree()
+        
     def saveasbib_item(self, item):
         data = item.data(0, Qt.UserRole)
         item_text = item.text(0).split(" (")[0]
@@ -866,6 +904,7 @@ class BibManager(QMainWindow):
         self.current_prod_id = prod_data
         self.metadata_panel.setEnabled(True)
         self.save_metadata_btn.setEnabled(True)
+        
         prod = self.data["productions"].get(prod_id, {})
         
         for i in reversed(range(self.metadata_panel.layout().count())):
@@ -886,12 +925,14 @@ class BibManager(QMainWindow):
             self.metadata_panel.layout().insertWidget(self.metadata_panel.layout().count() - 1, edit)
             self.metadata_fields[key] = edit
 
-    def save_metadata(self):
+    def save_metadata_func(self):
         if not self.current_prod_id:
             QMessageBox.warning(self, "Warning", "No production selected to save metadata.")
             return
+        
         prod_id, path = self.current_prod_id
         prod = self.data["productions"].get(prod_id, {})
+        
         for key, edit in self.metadata_fields.items():
             value = edit.toPlainText() if isinstance(edit, QTextEdit) else edit.text()
             try:
@@ -900,10 +941,15 @@ class BibManager(QMainWindow):
                 prod[key] = value
             except json.JSONDecodeError:
                 prod[key] = value
+        
+        
         self.data["productions"][prod_id] = prod
+        
         self.save_file()
-        self.update_table([(prod_id, path)])
         self.update_tree()
+        
+        self.update_table([(prod_id, path)])
+
 
     def on_table_row_clicked(self, row, column):
         if row >= 0 and self.table_widget.item(row, 1):
