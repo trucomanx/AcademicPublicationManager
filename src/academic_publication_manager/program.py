@@ -14,8 +14,8 @@ from PyQt5.QtGui import QBrush, QColor, QIcon
 
 import academic_publication_manager.about as about
 from academic_publication_manager.desktop import create_desktop_file, create_desktop_directory, create_desktop_menu
-from academic_publication_manager.modules.wabout import show_about_window
-
+from academic_publication_manager.modules.wabout    import show_about_window
+from academic_publication_manager.modules.to_bibtex import id_list_to_bibtex_string
 from copy import deepcopy
 
 
@@ -317,27 +317,41 @@ class BibManager(QMainWindow):
         item = self.tree_widget.itemAt(position)
         if item:
             menu = QMenu()
+            
+            # Delete 
             delete_action = menu.addAction( QIcon.fromTheme("edit-delete"),
                                             "Delete")
             delete_action.triggered.connect(lambda: self.delete_item(item))
             
+            # Save bibfile
+            saveasbib_action = menu.addAction( QIcon.fromTheme("document-save-as"),
+                                            "Save as *.bib")
+            saveasbib_action.triggered.connect(lambda: self.saveasbib_item(item))
+            
+            
             if item.data(0, Qt.UserRole):  # É uma produção (folha)
+                
+                # Change ID
                 change_id_action = menu.addAction(  QIcon.fromTheme("document-edit"),
                                                     "Change ID")
                 change_id_action.triggered.connect(lambda: self.change_production_id(item))
                 
+                # Duplicate
                 duplicate_action = menu.addAction(  QIcon.fromTheme("edit-copy"), 
                                                     "Duplicate Publication")
                 duplicate_action.triggered.connect(lambda: self.duplicate_production(item))
             else:  # É uma pasta
+                # New folder
                 new_folder_action = menu.addAction( QIcon.fromTheme("folder-new"),
                                                     "New folder")
                 new_folder_action.triggered.connect(lambda: self.create_new_folder(item))
                 
+                # New production
                 new_production_action = menu.addAction( QIcon.fromTheme("document-new"),
                                                         "New production")
                 new_production_action.triggered.connect(lambda: self.create_new_production(item))
                 
+                # Rename folder
                 rename_folder_action = menu.addAction(  QIcon.fromTheme("folder-visiting"),
                                                         "Rename folder")
                 rename_folder_action.triggered.connect(lambda: self.rename_folder(item))
@@ -592,6 +606,63 @@ class BibManager(QMainWindow):
         if "(" in text and text.endswith(")"):
             return text[text.rfind("(")+1:-1]
         return text
+
+    def saveasbib_item(self, item):
+        data = item.data(0, Qt.UserRole)
+        item_text = item.text(0).split(" (")[0]
+        path = self.get_item_path(item)
+        
+        id_list = []
+        if data:  # É uma produção (folha)
+            prod_id, parent_path = data
+            
+            id_list = [prod_id]
+            
+        else: # é uma pasta
+            current = self.data["structure"]
+                        
+            parent = current
+            for key in path:
+                parent = current
+                current = current[key]
+            
+            id_list = self.collect_production_ids(current)
+        
+        if len(id_list)>0:
+            print("prod_id:", id_list)
+            
+            output = id_list_to_bibtex_string(self.data["productions"],id_list)          
+                
+            # Abre o diálogo para salvar
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save BibTeX file",
+                "",
+                "BibTeX Files (*.bib);;All files (*)",
+                options=options
+            )
+
+            if file_path:
+                # Garante que a extensão .bib esteja presente
+                if not file_path.lower().endswith(".bib"):
+                    file_path += ".bib"
+
+                try:
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(output)
+                    QMessageBox.information(self, "Success", f"File save in:\n{file_path}")
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"It was not possible to save the file:\n{str(e)}")
+
+            
+        else:
+            confirm = QMessageBox.question(
+                self, "Warning",
+                f"No productions found in '{item.text(0)}'",
+                QMessageBox.Yes
+            )
 
     def delete_item(self, item):
         data = item.data(0, Qt.UserRole)
