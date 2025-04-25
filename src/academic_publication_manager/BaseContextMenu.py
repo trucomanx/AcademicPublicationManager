@@ -11,6 +11,15 @@ from academic_publication_manager.modules.to_bibtex      import bibtex_to_dicts
 
 class BaseContextMenu:
     def show_context_menu(self, position):
+        """
+        Displays a context menu at the specified position in the tree widget.
+        
+        Args:
+            position (QPoint): The position where the context menu should appear.
+            
+        The menu items vary depending on whether the clicked item is a production (leaf node)
+        or a folder (parent node).
+        """
         item = self.tree_widget.itemAt(position)
         if item:
             menu = QMenu()
@@ -23,7 +32,7 @@ class BaseContextMenu:
             # Separator
             menu.addSeparator()
             
-            if item.data(0, Qt.UserRole):  # É uma produção (folha)
+            if item.data(0, Qt.UserRole):  # It's a production (leaf node)
                 
                 # Change ID
                 change_id_action = menu.addAction(  QIcon.fromTheme("document-edit"),
@@ -38,7 +47,7 @@ class BaseContextMenu:
                 # Separator
                 menu.addSeparator()
                 
-            else:  # É uma pasta
+            else:  # It's a folder
                 # New folder
                 new_folder_action = menu.addAction( QIcon.fromTheme("folder-new"),
                                                     "New folder")
@@ -71,13 +80,44 @@ class BaseContextMenu:
             
                 
             menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
- 
+
+
+    def collect_production_ids(self, structure):
+        """
+        Recursively collects all production IDs from a given folder structure.
+        
+        Args:
+            structure (dict): The folder structure to search through.
+            
+        Returns:
+            list: A list of all production IDs found in the structure.
+        """
+        prod_ids = []
+        if not isinstance(structure, dict):
+            return prod_ids
+        for key, value in structure.items():
+            if value is None and key in self.data.get("productions", {}):
+                prod_ids.append(key)
+            elif isinstance(value, dict):
+                prod_ids.extend(self.collect_production_ids(value))
+        return prod_ids
+
+
     def delete_item(self, item):
+        """
+        Deletes an item (either a production or folder) from the structure.
+        
+        Args:
+            item (QTreeWidgetItem): The item to be deleted.
+            
+        Shows a confirmation dialog before deletion. For folders, deletes all
+        subfolders and productions recursively.
+        """
         data = item.data(0, Qt.UserRole)
         item_text = item.text(0).split(" (")[0]
         path = self.get_item_path(item)
 
-        if data:  # É uma produção (folha)
+        if data:  # It's a production (leaf node)
             prod_id, parent_path = data
             confirm = QMessageBox.question(
                 self, "Confirm Deletion",
@@ -97,7 +137,7 @@ class BaseContextMenu:
                 self.current_prod_id = None
                 self.metadata_panel.setEnabled(False)
                 self.save_metadata_btn.setEnabled(False)
-        else:  # É uma pasta
+        else:  # It's a folder
             confirm = QMessageBox.question(
                 self, "Confirm Deletion",
                 f"Do you want to delete the folder '{item_text}' and all its subfolders and productions?",
@@ -132,9 +172,69 @@ class BaseContextMenu:
         
         self.table_widget.setRowCount(0)
 
+    def extract_id_from_text(self, text):
+        """
+        Extracts the production ID from an item's text.
+        
+        Args:
+            text (str): The text from which to extract the ID.
+            
+        Returns:
+            str: The extracted ID, or the original text if no ID is found.
+        """
+        if "(" in text and text.endswith(")"):
+            return text[text.rfind("(")+1:-1]
+        return text
+
+
+    def production_exists(self, prod_id):
+        """
+        Checks if a production with the given ID exists.
+        
+        Args:
+            prod_id (str): The production ID to check.
+            
+        Returns:
+            bool: True if the production exists, False otherwise.
+        """
+        return prod_id in self.data.get("productions", {})
+
+
+    def find_tree_item_by_path(self, path):
+        """
+        Finds a tree item by its path in the structure.
+        
+        Args:
+            path (list): The path to the item as a list of folder names.
+            
+        Returns:
+            QTreeWidgetItem: The found item, or None if not found.
+        """
+        current_item = self.tree_widget.invisibleRootItem()
+        for name in path:
+            found = False
+            for i in range(current_item.childCount()):
+                child = current_item.child(i)
+                child_text = child.text(0).split(" (")[0]
+                if child_text == name:
+                    current_item = child
+                    found = True
+                    break
+            if not found:
+                return None
+        return current_item
+
 
     def change_production_id(self, item):
-        #print("item.text(0)",item.text(0))
+        """
+        Changes the ID of a production.
+        
+        Args:
+            item (QTreeWidgetItem): The production item to modify.
+            
+        Shows an input dialog to get the new ID, validates it, and updates
+        the structure and productions if valid.
+        """
         old_prod_id, parent_path = item.data(0, Qt.UserRole)
         while True:
             new_prod_id, ok = QInputDialog.getText( self, 
@@ -171,7 +271,7 @@ class BaseContextMenu:
         new_item = self.find_tree_item_by_path(parent_path)
         if new_item:
             new_item.setExpanded(True)
-            # Agora procuramos entre os filhos
+            # Now search among children
             for i in range(new_item.childCount()):
                 child = new_item.child(i)
                 if self.extract_id_from_text(child.text(0)) == new_prod_id:
@@ -185,6 +285,15 @@ class BaseContextMenu:
 
     
     def duplicate_production(self, item):
+        """
+        Duplicates a production with a new ID.
+        
+        Args:
+            item (QTreeWidgetItem): The production item to duplicate.
+            
+        Shows an input dialog to get the new ID, validates it, creates a copy
+        of the production with the new ID, and updates the structure.
+        """
         prod_id, parent_path = item.data(0, Qt.UserRole)
         while True:
             new_prod_id, ok = QInputDialog.getText(self, "Duplicate Publication", 
@@ -202,26 +311,26 @@ class BaseContextMenu:
                 continue
             break
 
-        # Copiar os metadados da produção original
+        # Copy metadata from original production
         original_prod = self.data["productions"].get(prod_id, {})
         new_prod = deepcopy(original_prod)
         self.data["productions"][new_prod_id] = new_prod
 
-        # Adicionar a nova produção à mesma pasta pai
+        # Add new production to the same parent folder
         current = self.data["structure"]
         for key in parent_path:
             current = current[key]
         current[new_prod_id] = None
 
-        # Salvar e atualizar a interface
+        # Save and update interface
         self.save_file()
         
-        # Preservar o estado expandido da árvore
+        # Preserve expanded state of the tree
         expanded_items = self.get_expanded_items()
         self.update_tree()
         self.restore_expanded_items(expanded_items)
 
-        # Selecionar a nova produção
+        # Select the new production
         new_item = self.find_tree_item_by_path(parent_path)
         if new_item:
             new_item.setExpanded(True)
@@ -255,7 +364,15 @@ class BaseContextMenu:
                 self.tree_widget.setCurrentItem(new_parent_item)
 
 
-    def add_production_to_structure_and_productions(self,parent_path,prod_id,production):
+    def add_production_to_structure_and_productions(self, parent_path, prod_id, production):
+        """
+        Adds a production to both the structure and productions dictionary.
+        
+        Args:
+            parent_path (list): The path to the parent folder.
+            prod_id (str): The ID of the new production.
+            production (dict): The production data to add.
+        """
         current = self.data["structure"]
         for key in parent_path:
             current = current[key]
@@ -265,12 +382,21 @@ class BaseContextMenu:
 
 
     def create_new_production(self, parent_item):
+        """
+        Creates a new production under the specified parent item.
+        
+        Args:
+            parent_item (QTreeWidgetItem): The parent item under which to create the new production.
+            
+        Shows an input dialog to get the production ID, validates it, and adds
+        a new production with default metadata.
+        """
         while True:
             prod_id, ok = QInputDialog.getText(self, "New production", "Enter the new production ID:")
             if not ok or not prod_id:
                 return
             if self.production_exists(prod_id):
-                QMessageBox.warning(self, "Erro", f"The ID '{prod_id}' already exists. Please choose another ID.")
+                QMessageBox.warning(self, "Error", f"The ID '{prod_id}' already exists. Please choose another ID.")
                 continue
             break
         
@@ -294,6 +420,15 @@ class BaseContextMenu:
             
             
     def rename_folder(self, item):
+        """
+        Renames a folder.
+        
+        Args:
+            item (QTreeWidgetItem): The folder item to rename.
+            
+        Shows an input dialog to get the new name, validates it, and updates
+        the structure if valid.
+        """
         old_name = item.text(0).split(" (")[0]
         path = self.get_item_path(item)
         new_name, ok = QInputDialog.getText(self, "Rename folder", "New folder name:", QLineEdit.Normal, old_name)
@@ -320,6 +455,15 @@ class BaseContextMenu:
 
 
     def loadfrombib_item(self, item):
+        """
+        Loads productions from a .bib file into the specified folder.
+        
+        Args:
+            item (QTreeWidgetItem): The folder item where productions will be added.
+            
+        Shows a file dialog to select a .bib file, parses it, and adds all
+        productions to the folder.
+        """
         data = item.data(0, Qt.UserRole)
         item_text = item.text(0)
         path = self.get_item_path(item)
@@ -346,17 +490,27 @@ class BaseContextMenu:
         
         
     def saveasbib_item(self, item):
+        """
+        Saves productions from an item (folder or single production) to a .bib file.
+        
+        Args:
+            item (QTreeWidgetItem): The item to save (either a production or folder).
+            
+        For folders, saves all productions in the folder and subfolders.
+        For single productions, saves just that production.
+        Shows a file dialog to select the save location.
+        """
         data = item.data(0, Qt.UserRole)
         item_text = item.text(0).split(" (")[0]
         path = self.get_item_path(item)
         
         id_list = []
-        if data:  # É uma produção (folha)
+        if data:  # It's a production (leaf node)
             prod_id, parent_path = data
             
             id_list = [prod_id]
             
-        else: # é uma pasta
+        else: # It's a folder
             current = self.data["structure"]
                         
             parent = current
@@ -371,7 +525,7 @@ class BaseContextMenu:
             
             output = id_list_to_bibtex_string(self.data["productions"],id_list)          
                 
-            # Abre o diálogo para salvar
+            # Open save dialog
             options = QFileDialog.Options()
             options |= QFileDialog.DontUseNativeDialog
             file_path, _ = QFileDialog.getSaveFileName(
@@ -383,7 +537,7 @@ class BaseContextMenu:
             )
 
             if file_path:
-                # Garante que a extensão .bib esteja presente
+                # Ensure .bib extension is present
                 if not file_path.lower().endswith(".bib"):
                     file_path += ".bib"
 

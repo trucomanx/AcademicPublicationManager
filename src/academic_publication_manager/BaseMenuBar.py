@@ -1,6 +1,5 @@
 
 
-
 class BaseMenuBar:
     def init_menubar(self):
         menubar = self.menuBar()

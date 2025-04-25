@@ -7,6 +7,17 @@ from academic_publication_manager.modules.customtreeview import CustomTreeWidget
 
 class BaseBodyUi:
     def init_ui(self):
+        """
+        Initialize the main user interface components.
+        
+        This method sets up:
+        - The central widget and main layout
+        - A vertical splitter dividing top and bottom sections
+        - A horizontal splitter in the top section for tree view and metadata panel
+        - A custom tree widget for folder structure
+        - A metadata panel with scrollable area
+        - A bottom section with table view and filter input
+        """
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
@@ -22,8 +33,8 @@ class BaseBodyUi:
 
         top_layout.addWidget(horizontal_splitter)
 
-        # Usar CustomTreeWidget em vez de QTreeWidget
-        self.tree_widget = CustomTreeWidget(self)  # Passar self como parent para acessar métodos de BibManager
+        # Use CustomTreeWidget instead of QTreeWidget
+        self.tree_widget = CustomTreeWidget(self)  # Pass self as parent to access BibManager methods
         self.tree_widget.setHeaderLabel("Folder structure")
         self.tree_widget.itemClicked.connect(self.on_tree_item_clicked)
         self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -58,7 +69,7 @@ class BaseBodyUi:
         bottom_layout.addWidget(self.table_widget)
 
         self.filter_input = QLineEdit()
-        self.filter_input.setPlaceholderText("Filtrar por título ou ID...")
+        self.filter_input.setPlaceholderText("Filter by title or ID...")
         self.filter_input.textChanged.connect(self.filter_table)
         bottom_layout.addWidget(self.filter_input)
 
@@ -66,6 +77,18 @@ class BaseBodyUi:
         horizontal_splitter.setSizes([300, 300])
 
     def on_tree_item_clicked(self, item, column):
+        """
+        Handle click events on tree items.
+        
+        Args:
+            item (QTreeWidgetItem): The clicked tree item
+            column (int): The column index that was clicked
+            
+        This method:
+        - Clears the table widget
+        - If the item has associated data, loads its metadata and updates the table
+        - Otherwise, disables metadata panel and loads productions for the selected folder
+        """
         self.table_widget.setRowCount(0)
         data = item.data(0, Qt.UserRole)
         if data:
@@ -81,6 +104,18 @@ class BaseBodyUi:
 
 
     def save_metadata_func(self):
+        """
+        Save the current metadata to the data structure.
+        
+        This method:
+        - Validates that a production is selected
+        - Collects metadata from all fields
+        - Attempts to parse JSON data if field values look like JSON
+        - Updates the production data
+        - Saves to file
+        - Updates the tree and table views
+        - Restores expanded items in the tree
+        """
         if not self.current_prod_id:
             QMessageBox.warning(self, "Warning", "No production selected to save metadata.")
             return
@@ -109,6 +144,18 @@ class BaseBodyUi:
         self.update_table([(prod_id, path)])
 
     def on_table_row_clicked(self, row, column):
+        """
+        Handle click events on table rows.
+        
+        Args:
+            row (int): The clicked row index
+            column (int): The clicked column index
+            
+        This method:
+        - Gets the production ID from the clicked row
+        - Loads metadata for the selected production if valid
+        - Otherwise disables the metadata panel
+        """
         if row >= 0 and self.table_widget.item(row, 1):
             prod_id = self.table_widget.item(row, 1).text()
             path = self.get_production_path(prod_id)
@@ -121,6 +168,12 @@ class BaseBodyUi:
             
 
     def filter_table(self):
+        """
+        Filter the table contents based on the filter input text.
+        
+        The filtering is case-insensitive and matches against both title and ID columns.
+        Rows are hidden if they don't contain the filter text in either column.
+        """
         filter_text = self.filter_input.text().lower()
         for row in range(self.table_widget.rowCount()):
             title = self.table_widget.item(row, 0).text().lower() if self.table_widget.item(row, 0) else ""
@@ -130,5 +183,11 @@ class BaseBodyUi:
 
 
     def show_context_menu(self):
-        raise NotImplementedError("Você precisa implementar show_context_menu() na classe principal.")
-
+        """
+        Show a context menu for the tree widget.
+        
+        Note:
+            This is an abstract method that must be implemented by subclasses.
+            Raises NotImplementedError if called directly.
+        """
+        raise NotImplementedError("You need to implement show_context_menu() in the main class.")

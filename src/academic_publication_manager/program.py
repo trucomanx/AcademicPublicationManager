@@ -27,7 +27,16 @@ from academic_publication_manager.BaseContextMenu import BaseContextMenu
 
 
 class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBodyUi):
+    """
+    Main class for the Academic Publication Manager application.
+    Handles the GUI and core functionality for managing academic publications.
+    """
+    
     def __init__(self):
+        """
+        Initialize the BibManager application.
+        Sets up the main window, initializes data structures, and creates UI elements.
+        """
         super().__init__()
         self.setWindowTitle(about.__program_name__)
         self.setGeometry(100, 100, 1200, 600)
@@ -57,6 +66,12 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
 
 
     def get_expanded_items(self):
+        """
+        Collects all currently expanded items in the tree widget.
+        
+        Returns:
+            list: A list of paths to all expanded items, where each path is a list of strings.
+        """
         expanded = []
         def collect_expanded(item, path):
             # Definir text apenas para itens não-raiz
@@ -75,6 +90,12 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
 
 
     def restore_expanded_items(self, expanded_items):
+        """
+        Restores the expanded state of items in the tree widget based on saved paths.
+        
+        Args:
+            expanded_items (list): List of paths to items that should be expanded.
+        """
         def find_and_expand(item, path):
             if not path:
                 return
@@ -93,30 +114,13 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
             find_and_expand(self.tree_widget.invisibleRootItem(), path)
 
 
-
-
-    def production_exists(self, prod_id):
-        return prod_id in self.data.get("productions", {})
-
- 
-    def extract_id_from_text(self,text):
-        if "(" in text and text.endswith(")"):
-            return text[text.rfind("(")+1:-1]
-        return text
-
-
-    def collect_production_ids(self, structure):
-        prod_ids = []
-        if not isinstance(structure, dict):
-            return prod_ids
-        for key, value in structure.items():
-            if value is None and key in self.data.get("productions", {}):
-                prod_ids.append(key)
-            elif isinstance(value, dict):
-                prod_ids.extend(self.collect_production_ids(value))
-        return prod_ids
-
     def clean_structure(self, structure):
+        """
+        Recursively removes empty nodes from the folder structure.
+        
+        Args:
+            structure (dict): The folder structure to clean.
+        """
         if not isinstance(structure, dict):
             return
         keys_to_remove = []
@@ -129,6 +133,15 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
             structure.pop(key, None)
 
     def get_item_path(self, item):
+        """
+        Gets the path to a tree widget item as a list of folder names.
+        
+        Args:
+            item (QTreeWidgetItem): The item to get the path for.
+            
+        Returns:
+            list: The path from root to the item as a list of strings.
+        """
         path = []
         while item and item != self.tree_widget.invisibleRootItem():
             text = item.text(0).split(" (")[0]
@@ -136,28 +149,23 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
             item = item.parent()
         return path[::-1]
 
-    def find_tree_item_by_path(self, path):
-        current_item = self.tree_widget.invisibleRootItem()
-        for name in path:
-            found = False
-            for i in range(current_item.childCount()):
-                child = current_item.child(i)
-                child_text = child.text(0).split(" (")[0]
-                if child_text == name:
-                    current_item = child
-                    found = True
-                    break
-            if not found:
-                return None
-        return current_item
-
-
 
     def update_tree(self):
+        """
+        Clears and repopulates the tree widget with the current folder structure.
+        """
         self.tree_widget.clear()
         self.populate_tree(self.data["structure"], self.tree_widget.invisibleRootItem())
 
     def populate_tree(self, structure, parent, path=None):
+        """
+        Recursively populates the tree widget with items from the folder structure.
+        
+        Args:
+            structure (dict): The folder structure to display.
+            parent (QTreeWidgetItem): The parent item in the tree widget.
+            path (list, optional): Current path in the folder structure. Defaults to None.
+        """
         if path is None:
             path = []
         if not isinstance(structure, dict):
@@ -177,8 +185,16 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
                 self.populate_tree(value, item, path + [key])
 
 
-
     def get_productions_in_folder(self, path):
+        """
+        Gets all productions contained within a specific folder path.
+        
+        Args:
+            path (list): The folder path to search within.
+            
+        Returns:
+            list: List of tuples containing (production_id, path) for each production.
+        """
         productions = []
         current = self.data["structure"]
         for key in path:
@@ -197,6 +213,12 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
         return productions
 
     def update_table(self, production_ids):
+        """
+        Updates the table widget with information about the specified productions.
+        
+        Args:
+            production_ids (list): List of tuples containing (production_id, path) to display.
+        """
         self.table_widget.setRowCount(len(production_ids))
         for row, (prod_id, path) in enumerate(production_ids):
             prod = self.data["productions"].get(prod_id, {})
@@ -206,6 +228,12 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
         self.table_widget.resizeColumnsToContents()
 
     def load_metadata(self, prod_data):
+        """
+        Loads and displays metadata for a specific production in the metadata panel.
+        
+        Args:
+            prod_data (tuple): Tuple containing (production_id, path) of the production to display.
+        """
         prod_id, path = prod_data
         self.current_prod_id = prod_data
         self.metadata_panel.setEnabled(True)
@@ -233,6 +261,15 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
 
 
     def get_production_path(self, prod_id):
+        """
+        Finds the folder path for a specific production ID.
+        
+        Args:
+            prod_id (str): The production ID to search for.
+            
+        Returns:
+            list: The folder path as a list of strings, or None if not found.
+        """
         def search_path(structure, current_path):
             for key, value in structure.items():
                 if key == prod_id and value is None:
@@ -245,6 +282,10 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
         return search_path(self.data["structure"], [])
 
 def main():
+    """
+    Main entry point for the application.
+    Handles command line arguments and initializes the GUI.
+    """
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     create_desktop_directory()    
