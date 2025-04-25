@@ -241,11 +241,13 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
         
         prod = self.data["productions"].get(prod_id, {})
         
+        # apaga widgets anteriores
         for i in reversed(range(self.metadata_panel.layout().count())):
             widget = self.metadata_panel.layout().itemAt(i).widget()
             if widget and widget != self.save_metadata_btn:
                 widget.deleteLater()
 
+        #
         self.metadata_fields = {}
         for key, value in prod.items():
             label = QLabel(key.capitalize() + ":")

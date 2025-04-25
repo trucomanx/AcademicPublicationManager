@@ -47,16 +47,19 @@ class BaseBodyUi:
         self.metadata_fields = {}
         self.metadata_panel.setEnabled(False)
 
+
+        self.save_metadata_btn = QPushButton("Save Metadata")
+        self.save_metadata_btn.clicked.connect(self.save_metadata_func)
+        metadata_layout.addWidget(self.save_metadata_btn)
+        self.save_metadata_btn.setEnabled(False)
+        
+
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(self.metadata_panel)
         horizontal_splitter.addWidget(scroll_area)
 
 
-        self.save_metadata_btn = QPushButton("Save Metadata")
-        self.save_metadata_btn.clicked.connect(self.save_metadata_func)
-        metadata_layout.addWidget(self.save_metadata_btn)
-        self.save_metadata_btn.setEnabled(False)
 
         bottom_widget = QWidget()
         bottom_layout = QVBoxLayout(bottom_widget)
