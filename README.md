@@ -6,7 +6,7 @@ Simple academic publication manager GUI.
 
 ## 1. Installing
 
-To install the package from `PyPI`, follow the instructions below:
+To install the package from [PyPI](https://pypi.org/project/academic-publication-manager/), follow the instructions below:
 
 
 ```bash

@@ -2,11 +2,11 @@
 
 Simple academic publication manager GUI.
 
-![logo](screenshot.png)
+![logo](https://raw.githubusercontent.com/trucomanx/AcademicPublicationManager/main/screenshot.png)
 
 ## 1. Installing
 
-To install the package from `PyPI`, follow the instructions below:
+To install the package from [PyPI](https://pypi.org/project/academic-publication-manager/), follow the instructions below:
 
 
 ```bash
