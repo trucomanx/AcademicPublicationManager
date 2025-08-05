@@ -76,7 +76,7 @@ class BaseToolBar():
             self.update_tree()
 
     def open_file(self):
-        file_name, _ = QFileDialog.getOpenFileName(self, "Open JSON File", "", "JSON Files (*.json)")
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open JSON File", "", "JSON Files (*.Publications.json)")
         if file_name:
             with open(file_name, 'r', encoding='utf-8') as f:
                 self.data = json.load(f)
@@ -93,8 +93,12 @@ class BaseToolBar():
             with open(self.current_file, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, indent=2, ensure_ascii=False)
         else:
-            file_name, _ = QFileDialog.getSaveFileName(self, "Save JSON File", "", "JSON Files (*.json)")
+            file_name, _ = QFileDialog.getSaveFileName(self, "Save JSON File", "", "JSON Files (*.Publications.json)")
+                
             if file_name:
+                if not file_name.endswith(".Publications.json"):
+                    file_name += ".Publications.json"
+                    
                 self.current_file = file_name
                 with open(self.current_file, 'w', encoding='utf-8') as f:
                     json.dump(self.data, f, indent=2, ensure_ascii=False)
