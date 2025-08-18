@@ -6,7 +6,7 @@ import signal
 import copy
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QTreeWidgetItem,
-                             QTableWidgetItem, QLineEdit,
+                             QTableWidgetItem, QLineEdit, QFormLayout, 
                              QLabel, QTextEdit, QFileDialog,
                              QInputDialog, QMessageBox)
 from PyQt5.QtCore import Qt
@@ -241,11 +241,25 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
         
         prod = self.data["productions"].get(prod_id, {})
         
+        form_layout = self.metadata_panel.layout()
+        
         # apaga widgets anteriores
-        for i in reversed(range(self.metadata_panel.layout().count())):
-            widget = self.metadata_panel.layout().itemAt(i).widget()
-            if widget and widget != self.save_metadata_btn:
-                widget.deleteLater()
+        for row in reversed(range(form_layout.rowCount())):
+            label_item = form_layout.itemAt(row, QFormLayout.LabelRole)
+            field_item = form_layout.itemAt(row, QFormLayout.FieldRole)
+
+            # Se existir, pega o widget
+            label = label_item.widget() if label_item else None
+            field = field_item.widget() if field_item else None
+
+            # Apaga os widgets, mas não mexe no botão de salvar
+            for widget in (label, field):
+                if widget and widget != self.save_metadata_btn:
+                    widget.deleteLater()
+
+            # Remove a linha do layout
+            form_layout.removeRow(row)
+
 
         #
         self.metadata_fields = {}
@@ -257,8 +271,7 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
             else:
                 edit = QLineEdit()
                 edit.setText(str(value))
-            self.metadata_panel.layout().insertWidget(self.metadata_panel.layout().count() - 1, label)
-            self.metadata_panel.layout().insertWidget(self.metadata_panel.layout().count() - 1, edit)
+            form_layout.insertRow(form_layout.count() - 1, label, edit)
             self.metadata_fields[key] = edit
 
 

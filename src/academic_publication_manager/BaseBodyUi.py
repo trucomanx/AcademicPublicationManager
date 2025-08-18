@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QScrollArea, QPushButton, QTableWidget, QLineEdit, QMessageBox, QTextEdit
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QScrollArea, QPushButton, QTableWidget, QLineEdit, QMessageBox, QTextEdit, QFormLayout
 from PyQt5.QtCore import Qt
 
 import json
@@ -41,22 +41,25 @@ class BaseBodyUi:
         self.tree_widget.customContextMenuRequested.connect(self.show_context_menu)
         horizontal_splitter.addWidget(self.tree_widget)
 
+        self.general_panel = QWidget()
+        self.general_layout = QVBoxLayout(self.general_panel)
         
         self.metadata_panel = QWidget()
-        metadata_layout = QVBoxLayout(self.metadata_panel)
+        self.general_layout.addWidget(self.metadata_panel)
+        metadata_layout = QFormLayout(self.metadata_panel)
         self.metadata_fields = {}
         self.metadata_panel.setEnabled(False)
 
 
         self.save_metadata_btn = QPushButton("Save Metadata")
         self.save_metadata_btn.clicked.connect(self.save_metadata_func)
-        metadata_layout.addWidget(self.save_metadata_btn)
+        self.general_layout.addWidget(self.save_metadata_btn)
         self.save_metadata_btn.setEnabled(False)
         
 
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(self.metadata_panel)
+        scroll_area.setWidget(self.general_panel)
         horizontal_splitter.addWidget(scroll_area)
 
 
