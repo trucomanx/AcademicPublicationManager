@@ -226,7 +226,8 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
             prod = self.data["productions"].get(prod_id, {})
             if prod:
                 self.table_widget.setItem(row, 0, QTableWidgetItem(prod.get("title", "")))
-                self.table_widget.setItem(row, 1, QTableWidgetItem(prod_id))
+                self.table_widget.setItem(row, 1, QTableWidgetItem(prod.get("year", "")))
+                self.table_widget.setItem(row, 2, QTableWidgetItem(prod_id))
         self.table_widget.resizeColumnsToContents()
 
     def load_metadata(self, prod_data):

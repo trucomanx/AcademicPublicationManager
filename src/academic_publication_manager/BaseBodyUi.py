@@ -68,14 +68,16 @@ class BaseBodyUi:
         bottom_layout = QVBoxLayout(bottom_widget)
         vertical_splitter.addWidget(bottom_widget)
 
+        TITLES = ["Title", "Year", "ID"]
+
         self.table_widget = QTableWidget()
-        self.table_widget.setColumnCount(2)
-        self.table_widget.setHorizontalHeaderLabels(["Title", "ID"])
+        self.table_widget.setColumnCount(len(TITLES))
+        self.table_widget.setHorizontalHeaderLabels(TITLES)
         self.table_widget.cellClicked.connect(self.on_table_row_clicked)
         bottom_layout.addWidget(self.table_widget)
 
         self.filter_input = QLineEdit()
-        self.filter_input.setPlaceholderText("Filter by title or ID...")
+        self.filter_input.setPlaceholderText("Filter by title or year...")
         self.filter_input.textChanged.connect(self.filter_table)
         bottom_layout.addWidget(self.filter_input)
 
@@ -162,8 +164,11 @@ class BaseBodyUi:
         - Loads metadata for the selected production if valid
         - Otherwise disables the metadata panel
         """
-        if row >= 0 and self.table_widget.item(row, 1):
-            prod_id = self.table_widget.item(row, 1).text()
+        
+        ID_COL_POS = 2 # Column posicion of bibliographic publication ID 
+        
+        if row >= 0 and self.table_widget.item(row, ID_COL_POS):
+            prod_id = self.table_widget.item(row, ID_COL_POS).text()
             path = self.get_production_path(prod_id)
             if path:
                 self.load_metadata((prod_id, path))
@@ -182,9 +187,10 @@ class BaseBodyUi:
         """
         filter_text = self.filter_input.text().lower()
         for row in range(self.table_widget.rowCount()):
-            title = self.table_widget.item(row, 0).text().lower() if self.table_widget.item(row, 0) else ""
-            prod_id = self.table_widget.item(row, 1).text().lower() if self.table_widget.item(row, 1) else ""
-            visible = filter_text in title or filter_text in prod_id
+            title   = self.table_widget.item(row, 0).text().lower() if self.table_widget.item(row, 0) else ""
+            year    = self.table_widget.item(row, 1).text().lower() if self.table_widget.item(row, 1) else ""
+            prod_id = self.table_widget.item(row, 2).text().lower() if self.table_widget.item(row, 2) else ""
+            visible = filter_text in title or filter_text in year or filter_text in prod_id
             self.table_widget.setRowHidden(row, not visible)
 
 
