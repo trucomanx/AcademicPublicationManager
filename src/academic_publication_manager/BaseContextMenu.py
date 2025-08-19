@@ -6,6 +6,7 @@ from copy import deepcopy
 import copy
 
 from academic_publication_manager.modules.production     import bibtex_examples
+from academic_publication_manager.modules.to_bibtex      import reorder_dict
 from academic_publication_manager.modules.to_bibtex      import id_list_to_bibtex_string
 from academic_publication_manager.modules.to_bibtex      import bibtex_to_dicts
 
@@ -66,8 +67,13 @@ class BaseContextMenu:
                 for entry_type in bibtex_examples:
                     new_production_action = menu_production.addAction( QIcon.fromTheme("document-new"), entry_type)
                     new_production_action.setStatusTip("Add a new bibliographic production of type:"+" "+entry_type)
-                    new_production_action.triggered.connect(lambda: self.create_new_production(item, entry_type))
+                    
+                    new_production_action.triggered.connect(
+                        lambda checked=False, et=entry_type: self.create_new_production(item, et)
+                    )
 
+                for action in menu_production.actions():
+                    action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip(), 3000))
                 
                 # Separator
                 menu.addSeparator()
@@ -87,8 +93,7 @@ class BaseContextMenu:
             for action in menu.actions():
                 action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip(), 3000))            
             
-            for action in menu_production.actions():
-                action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip(), 3000))            
+                      
                 
             menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
@@ -414,9 +419,12 @@ class BaseContextMenu:
         
         parent_path = self.get_item_path(parent_item)
 
+        ref_entry = copy.deepcopy(bibtex_examples[entry_type])
+        ref_entry = reorder_dict(ref_entry, priority_keys=["entry-type","title","year"], en_alpha=True)
+
         self.add_production_to_structure_and_productions(   parent_path,
                                                             prod_id,
-                                                            copy.deepcopy(bibtex_examples[entry_type]))
+                                                            ref_entry)
         
         self.save_file()
         

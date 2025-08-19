@@ -8,6 +8,7 @@ bibtex_examples = {
         "number": "3",
         "pages": "123-145",
         "month": "jan",
+        "doi": "",
         "note": "An optional note",
         "entry-type": "article"
     },
@@ -21,6 +22,8 @@ bibtex_examples = {
         "address": "New York",
         "edition": "2nd",
         "month": "feb",
+        "isbn": "",
+        "url": "",
         "note": "Optional note",
         "entry-type": "book"
     },
@@ -37,6 +40,9 @@ bibtex_examples = {
         "address": "London",
         "edition": "1st",
         "month": "may",
+        "isbn": "",
+        "doi": "",
+        "url": "",
         "note": "Optional note",
         "entry-type": "inbook"
     },
@@ -47,6 +53,7 @@ bibtex_examples = {
         "address": "Los Angeles",
         "year": "2018",
         "month": "mar",
+        "url": "",
         "note": "Optional note",
         "entry-type": "booklet"
     },
@@ -61,6 +68,8 @@ bibtex_examples = {
         "pages": "50-60",
         "address": "Paris",
         "month": "apr",
+        "doi": "",
+        "url": "",
         "publisher": "Conference Press",
         "note": "Optional note",
         "entry-type": "conference"
@@ -73,6 +82,8 @@ bibtex_examples = {
         "series": "Proceedings Series",
         "address": "Madrid",
         "month": "dec",
+        "doi": "",
+        "url": "",
         "publisher": "Proceedings Press",
         "note": "Optional note",
         "entry-type": "proceedings"
@@ -88,6 +99,8 @@ bibtex_examples = {
         "pages": "101-110",
         "address": "Tokyo",
         "month": "jul",
+        "doi": "",
+        "url": "",
         "publisher": "Tech Press",
         "note": "Optional note",
         "entry-type": "inproceedings"
@@ -107,6 +120,8 @@ bibtex_examples = {
         "address": "Berlin",
         "edition": "1st",
         "month": "jun",
+        "doi": "",
+        "url": "",
         "note": "Optional note",
         "entry-type": "incollection"
     },
@@ -118,6 +133,8 @@ bibtex_examples = {
         "type": "PhD Thesis",
         "address": "San Francisco",
         "month": "nov",
+        "doi": "",
+        "url": "",
         "note": "Optional note",
         "entry-type": "phdthesis"
     },
@@ -129,6 +146,8 @@ bibtex_examples = {
         "type": "Master's Thesis",
         "address": "Boston",
         "month": "sep",
+        "doi": "",
+        "url": "",
         "note": "Optional note",
         "entry-type": "mastersthesis"
     },
@@ -140,6 +159,7 @@ bibtex_examples = {
         "edition": "3rd",
         "year": "2013",
         "month": "aug",
+        "url": "",
         "note": "Optional note",
         "entry-type": "manual"
     },
@@ -149,6 +169,7 @@ bibtex_examples = {
         "howpublished": "Personal communication",
         "year": "2011",
         "month": "oct",
+        "url": "",
         "note": "Optional note",
         "entry-type": "misc"
     },
