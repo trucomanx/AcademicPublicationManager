@@ -74,6 +74,7 @@ class BaseBodyUi:
         self.table_widget.setColumnCount(len(TITLES))
         self.table_widget.setHorizontalHeaderLabels(TITLES)
         self.table_widget.cellClicked.connect(self.on_table_row_clicked)
+        self.table_widget.setSortingEnabled(True)
         bottom_layout.addWidget(self.table_widget)
 
         self.filter_input = QLineEdit()
