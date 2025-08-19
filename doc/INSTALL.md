@@ -2,22 +2,6 @@
 
 Simple academic publication manager GUI.
 
-## Testar program
-
-```bash
-cd src
-python3 -m academic_publication_manager.program
-```
-
-## Upload to PYPI
-
-```bash
-pip install --upgrade pkginfo twine packaging
-
-cd src
-python -m build
-twine upload dist/*
-```
 
 ## Install from PYPI
 
@@ -41,7 +25,7 @@ git clone https://github.com/trucomanx/AcademicPublicationManager.git
 cd AcademicPublicationManager
 pip install -r requirements.txt
 cd src
-python3 setup.py sdist
+python -m build
 pip install dist/academic_publication_manager-*.tar.gz
 ```
 Using:

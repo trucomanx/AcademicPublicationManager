@@ -58,7 +58,7 @@ class AboutWindow(QDialog):
         
         # Email info
         email_label = QLabel(f"Email: <a href=\"mailto:{data['email']}\">{data['email']}</a>")
-        email_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        email_label.setTextInteractionFlags(Qt.TextSelectableByMouse| Qt.LinksAccessibleByMouse)
         email_label.setOpenExternalLinks(True)
         email_label.setAlignment(Qt.AlignLeft)
         layout.addWidget(email_label)
@@ -71,21 +71,28 @@ class AboutWindow(QDialog):
         
         # Source URL
         source_label = QLabel(f"Source: <a href=\"{data['url_source']}\">{data['url_source']}</a>")
-        source_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        source_label.setTextInteractionFlags(Qt.TextSelectableByMouse| Qt.LinksAccessibleByMouse)
         source_label.setOpenExternalLinks(True)
         source_label.setAlignment(Qt.AlignLeft)
         layout.addWidget(source_label)
         
+        # Doc URL
+        doc_label = QLabel(f"Documentation: <a href=\"{data['url_doc']}\">{data['url_doc']}</a>")
+        doc_label.setTextInteractionFlags(Qt.TextSelectableByMouse| Qt.LinksAccessibleByMouse)
+        doc_label.setOpenExternalLinks(True)
+        doc_label.setAlignment(Qt.AlignLeft)
+        layout.addWidget(doc_label)
+        
         # Funding URL
         funding_label = QLabel(f"Funding: <a href=\"{data['url_funding']}\">{data['url_funding']}</a>")
-        funding_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        funding_label.setTextInteractionFlags(Qt.TextSelectableByMouse| Qt.LinksAccessibleByMouse)
         funding_label.setOpenExternalLinks(True)
         funding_label.setAlignment(Qt.AlignLeft)
         layout.addWidget(funding_label)
         
         # Bugs URL
         bugs_label = QLabel(f"Bugs: <a href=\"{data['url_bugs']}\">{data['url_bugs']}</a>")
-        bugs_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        bugs_label.setTextInteractionFlags(Qt.TextSelectableByMouse| Qt.LinksAccessibleByMouse)
         bugs_label.setOpenExternalLinks(True)
         bugs_label.setAlignment(Qt.AlignLeft)
         layout.addWidget(bugs_label)

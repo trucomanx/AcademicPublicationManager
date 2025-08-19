@@ -38,6 +38,7 @@ StartupWMClass={about.__package__}
     path = os.path.expanduser(os.path.join(desktop_path,f"{about.__program_name__}.desktop"))
     
     if not os.path.exists(path) or overwrite == True: 
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
             f.write(desktop_entry)
         os.chmod(path, 0o755)
@@ -60,6 +61,7 @@ Icon={icon}
     path = os.path.expanduser(f"~/.local/share/desktop-directories/{directory_name}.directory")
     
     if not os.path.exists(path) or overwrite == True:  # Evita sobrescrever
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
             f.write(desktop_entry)
         os.chmod(path, 0o755)
@@ -84,6 +86,7 @@ def create_desktop_menu(directory_name = "ResearchTools",
     path = os.path.expanduser(f"~/.config/menus/applications-merged/{basename}.menu")
     
     if not os.path.exists(path) or overwrite == True:  # Evita sobrescrever
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
             f.write(desktop_entry)
         print(f"File {path} created.")

@@ -15,6 +15,7 @@ from academic_publication_manager.about import (
     __email__,
     __description__,
     __url_source__,
+    __url_doc__,
     __url_funding__,
     __url_bugs__,
 )
@@ -51,6 +52,7 @@ dependencies = [
 [project.urls]
 "Bug Reports" = "{__url_bugs__}"
 "Funding" = "{__url_funding__}"
+"Documentation" = "{__url_doc__}"
 "Source" = "{__url_source__}"
 
 [project.scripts]

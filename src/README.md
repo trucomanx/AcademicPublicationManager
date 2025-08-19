@@ -24,7 +24,7 @@ academic-publication-manager
 ```
 ## 2. More information
 
-If you want more information [README.extras.md](https://github.com/trucomanx/AcademicPublicationManager/blob/main/README.extras.md)
+If you want more information go to [doc](https://github.com/trucomanx/AcademicPublicationManager/blob/main/doc) directory.
 
 ## 3. Buy me a coffee
 
