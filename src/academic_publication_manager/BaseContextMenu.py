@@ -26,6 +26,7 @@ class BaseContextMenu:
             
             # Delete 
             delete_action = menu.addAction( QIcon.fromTheme("edit-delete"), "Delete")
+            delete_action.setStatusTip("Delete the current element")
             delete_action.triggered.connect(lambda: self.delete_item(item))
             
             # Separator
@@ -35,12 +36,12 @@ class BaseContextMenu:
                 
                 # Change ID
                 change_id_action = menu.addAction(  QIcon.fromTheme("document-edit"), "Change ID")
-                change_id_action.setStatusTip("Change the ID name of current element")
+                change_id_action.setStatusTip("Change the ID name of current bibliographic production")
                 change_id_action.triggered.connect(lambda: self.change_production_id(item))
                 
                 # Duplicate
                 duplicate_action = menu.addAction(  QIcon.fromTheme("edit-copy"), "Duplicate Publication")
-                duplicate_action.setStatusTip("Duplicate the current element with another ID name")
+                duplicate_action.setStatusTip("Duplicate the current bibliographic production with another ID name")
                 duplicate_action.triggered.connect(lambda: self.duplicate_production(item))
                 
                 # Separator
@@ -49,32 +50,31 @@ class BaseContextMenu:
             else:  # It's a folder
                 # New folder
                 new_folder_action = menu.addAction( QIcon.fromTheme("folder-new"), "New folder")
-                new_folder_action.setStatusTip("Create a new folder inside")
+                new_folder_action.setStatusTip("Create a new folder inside the current folder")
                 new_folder_action.triggered.connect(lambda: self.create_new_folder(item))
                 
+                # Rename folder
+                rename_folder_action = menu.addAction(  QIcon.fromTheme("folder-visiting"), "Rename folder")
+                rename_folder_action.setStatusTip("Rename the current folder")
+                rename_folder_action.triggered.connect(lambda: self.rename_folder(item))
+
                 # new prduction
                 menu_production = QMenu("New production", self)
                 menu.addMenu(menu_production)
                 
                 # New production
-                
                 for entry_type in bibtex_examples:
                     new_production_action = menu_production.addAction( QIcon.fromTheme("document-new"), entry_type)
                     new_production_action.setStatusTip("Add a new bibliographic production of type:"+" "+entry_type)
                     new_production_action.triggered.connect(lambda: self.create_new_production(item, entry_type))
 
                 
-                # Rename folder
-                rename_folder_action = menu.addAction(  QIcon.fromTheme("folder-visiting"), "Rename folder")
-                rename_folder_action.setStatusTip("Rename the current folder")
-                rename_folder_action.triggered.connect(lambda: self.rename_folder(item))
-                
                 # Separator
                 menu.addSeparator()
                 
                 # load bibfile
                 loadfrombib_action = menu.addAction( QIcon.fromTheme("document-open"), "Load from *.bib")
-                loadfrombib_action.setStatusTip("Load the bibliographic productions from a *.bib file")
+                loadfrombib_action.setStatusTip("Load many bibliographic productions from a *.bib file")
                 loadfrombib_action.triggered.connect(lambda: self.loadfrombib_item(item))
             
             
@@ -85,13 +85,12 @@ class BaseContextMenu:
 
             
             for action in menu.actions():
-                action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip()))            
-                
+                action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip(), 3000))            
+            
             for action in menu_production.actions():
-                action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip()))            
+                action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip(), 3000))            
                 
             menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
-
 
 
 

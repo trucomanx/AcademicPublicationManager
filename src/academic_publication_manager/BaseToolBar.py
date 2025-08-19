@@ -74,6 +74,7 @@ class BaseToolBar():
             "email": about.__email__,
             "description": about.__description__,
             "url_source": about.__url_source__,
+            "url_doc": about.__url_doc__,
             "url_funding": about.__url_funding__,
             "url_bugs": about.__url_bugs__
         }
