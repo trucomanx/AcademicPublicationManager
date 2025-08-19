@@ -2,3 +2,5 @@
 /src/academic_publication_manager/__pycache__/
 /src/academic_publication_manager/modules/__pycache__/
 /src/pyproject.toml
+/src/academic_publication_manager.egg-info/
+/src/dist/
