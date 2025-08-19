@@ -130,13 +130,13 @@ class BaseBodyUi:
         prod = self.data["productions"].get(prod_id, {})
         
         for key, edit in self.metadata_fields.items():
-            value = edit.toPlainText() if isinstance(edit, QTextEdit) else edit.text()
-            try:
-                if value.startswith("[") or value.startswith("{"):
-                    value = json.loads(value)
-                prod[key] = value
-            except json.JSONDecodeError:
-                prod[key] = value
+        
+            if isinstance(edit, QTextEdit):
+                value = edit.toPlainText()
+            else: 
+                value = edit.text()
+ 
+            prod[key] = value
         
         
         self.data["productions"][prod_id] = prod

@@ -7,7 +7,7 @@ import copy
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QTreeWidgetItem,
                              QTableWidgetItem, QLineEdit, QFormLayout, 
-                             QLabel, QTextEdit, QFileDialog,
+                             QLabel, QTextEdit, QFileDialog, QStatusBar, 
                              QInputDialog, QMessageBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
@@ -64,6 +64,8 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
         self.save_metadata_btn.setEnabled(False)
         self.current_prod_id = None
 
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
 
     def get_expanded_items(self):
         """
@@ -264,13 +266,17 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
         #
         self.metadata_fields = {}
         for key, value in prod.items():
-            label = QLabel(key.capitalize() + ":")
-            if isinstance(value, list):
+            label = QLabel("<b>"+key + ":</b>")
+            if key in ["author","title","note"] :
                 edit = QTextEdit()
-                edit.setPlainText(json.dumps(value, indent=2, ensure_ascii=False))
+                edit.setPlainText(str(value))
             else:
                 edit = QLineEdit()
                 edit.setText(str(value))
+                
+            if key == 'entry-type':
+                edit.setReadOnly(True)
+                
             form_layout.insertRow(form_layout.count() - 1, label, edit)
             self.metadata_fields[key] = edit
 

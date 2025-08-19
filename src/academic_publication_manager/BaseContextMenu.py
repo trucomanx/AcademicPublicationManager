@@ -5,7 +5,7 @@ from PyQt5.QtCore    import Qt
 from copy import deepcopy
 import copy
 
-from academic_publication_manager.modules.production     import fake_production
+from academic_publication_manager.modules.production     import bibtex_examples
 from academic_publication_manager.modules.to_bibtex      import id_list_to_bibtex_string
 from academic_publication_manager.modules.to_bibtex      import bibtex_to_dicts
 
@@ -25,8 +25,7 @@ class BaseContextMenu:
             menu = QMenu()
             
             # Delete 
-            delete_action = menu.addAction( QIcon.fromTheme("edit-delete"),
-                                            "Delete")
+            delete_action = menu.addAction( QIcon.fromTheme("edit-delete"), "Delete")
             delete_action.triggered.connect(lambda: self.delete_item(item))
             
             # Separator
@@ -35,13 +34,13 @@ class BaseContextMenu:
             if item.data(0, Qt.UserRole):  # It's a production (leaf node)
                 
                 # Change ID
-                change_id_action = menu.addAction(  QIcon.fromTheme("document-edit"),
-                                                    "Change ID")
+                change_id_action = menu.addAction(  QIcon.fromTheme("document-edit"), "Change ID")
+                change_id_action.setStatusTip("Change the ID name of current element")
                 change_id_action.triggered.connect(lambda: self.change_production_id(item))
                 
                 # Duplicate
-                duplicate_action = menu.addAction(  QIcon.fromTheme("edit-copy"), 
-                                                    "Duplicate Publication")
+                duplicate_action = menu.addAction(  QIcon.fromTheme("edit-copy"), "Duplicate Publication")
+                duplicate_action.setStatusTip("Duplicate the current element with another ID name")
                 duplicate_action.triggered.connect(lambda: self.duplicate_production(item))
                 
                 # Separator
@@ -49,37 +48,51 @@ class BaseContextMenu:
                 
             else:  # It's a folder
                 # New folder
-                new_folder_action = menu.addAction( QIcon.fromTheme("folder-new"),
-                                                    "New folder")
+                new_folder_action = menu.addAction( QIcon.fromTheme("folder-new"), "New folder")
+                new_folder_action.setStatusTip("Create a new folder inside")
                 new_folder_action.triggered.connect(lambda: self.create_new_folder(item))
                 
+                # new prduction
+                menu_production = QMenu("New production", self)
+                menu.addMenu(menu_production)
+                
                 # New production
-                new_production_action = menu.addAction( QIcon.fromTheme("document-new"),
-                                                        "New production")
-                new_production_action.triggered.connect(lambda: self.create_new_production(item))
+                
+                for entry_type in bibtex_examples:
+                    new_production_action = menu_production.addAction( QIcon.fromTheme("document-new"), entry_type)
+                    new_production_action.setStatusTip("Add a new bibliographic production of type:"+" "+entry_type)
+                    new_production_action.triggered.connect(lambda: self.create_new_production(item, entry_type))
+
                 
                 # Rename folder
-                rename_folder_action = menu.addAction(  QIcon.fromTheme("folder-visiting"),
-                                                        "Rename folder")
+                rename_folder_action = menu.addAction(  QIcon.fromTheme("folder-visiting"), "Rename folder")
+                rename_folder_action.setStatusTip("Rename the current folder")
                 rename_folder_action.triggered.connect(lambda: self.rename_folder(item))
                 
                 # Separator
                 menu.addSeparator()
                 
                 # load bibfile
-                loadfrombib_action = menu.addAction( QIcon.fromTheme("document-open"),
-                                                "Load from *.bib")
+                loadfrombib_action = menu.addAction( QIcon.fromTheme("document-open"), "Load from *.bib")
+                loadfrombib_action.setStatusTip("Load the bibliographic productions from a *.bib file")
                 loadfrombib_action.triggered.connect(lambda: self.loadfrombib_item(item))
             
             
             # Save bibfile
-            saveasbib_action = menu.addAction( QIcon.fromTheme("document-save-as"),
-                                            "Save as *.bib")
+            saveasbib_action = menu.addAction( QIcon.fromTheme("document-save-as"), "Save as *.bib")
+            saveasbib_action.setStatusTip("Save bibliographic productions into a *.bib file")
             saveasbib_action.triggered.connect(lambda: self.saveasbib_item(item))
+
             
-            
+            for action in menu.actions():
+                action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip()))            
+                
+            for action in menu_production.actions():
+                action.hovered.connect(lambda a=action: self.statusBar().showMessage(a.statusTip()))            
                 
             menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+
+
 
 
     def collect_production_ids(self, structure):
@@ -381,7 +394,7 @@ class BaseContextMenu:
         self.data["productions"][prod_id] = production
 
 
-    def create_new_production(self, parent_item):
+    def create_new_production(self, parent_item, entry_type="article"):
         """
         Creates a new production under the specified parent item.
         
@@ -404,7 +417,7 @@ class BaseContextMenu:
 
         self.add_production_to_structure_and_productions(   parent_path,
                                                             prod_id,
-                                                            copy.deepcopy(fake_production))
+                                                            copy.deepcopy(bibtex_examples[entry_type]))
         
         self.save_file()
         
@@ -471,10 +484,7 @@ class BaseContextMenu:
         file_name, _ = QFileDialog.getOpenFileName(self, "Open BIB File", "", "BIB Files (*.bib)")
         if file_name:
             
-            with open(file_name, 'r') as myfile:
-                file_content = myfile.read()
-            
-            dicts = bibtex_to_dicts(file_content)
+            dicts = bibtex_to_dicts(file_name)
 
             for prod_id, production in dicts.items():
                 self.add_production_to_structure_and_productions(   path,
