@@ -15,6 +15,8 @@ from PyQt5.QtGui import QIcon
 
 import academic_publication_manager.about as about
 
+from academic_publication_manager.modules.resources import resource_path
+
 from academic_publication_manager.desktop import create_desktop_file
 from academic_publication_manager.desktop import create_desktop_directory
 from academic_publication_manager.desktop import create_desktop_menu
@@ -43,8 +45,7 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
         
         ## Icon
         # Get base directory for icons
-        base_dir_path = os.path.dirname(os.path.abspath(__file__))
-        self.icon_path = os.path.join(base_dir_path, 'icons', 'logo.png')
+        self.icon_path = resource_path('icons', 'logo.png')
         self.setWindowIcon(QIcon(self.icon_path)) 
         
         
@@ -180,10 +181,10 @@ class BibManager(QMainWindow, BaseContextMenu, BaseToolBar, BaseMenuBar, BaseBod
             if value is None and key in self.data.get("productions", {}):
                 prod_data = self.data["productions"][key]
                 item.setText(0, f"{prod_data.get('title', key)} ({key})")
-                item.setIcon(0, QIcon.fromTheme("text-x-generic"))
+                item.setIcon(0, QIcon(resource_path('icons', 'file.png')))
                 item.setData(0, Qt.UserRole, (key, path))
             elif isinstance(value, dict):
-                item.setIcon(0, QIcon.fromTheme("folder"))
+                item.setIcon(0, QIcon(resource_path('icons', 'folder.png')))
                 self.populate_tree(value, item, path + [key])
 
 

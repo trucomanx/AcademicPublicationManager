@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "academic_publication_manager"
+version = "0.1.4"
+description = "Simple academic publication manager GUI."
+readme = "README.md"
+authors = [{name = "Fernando Pujaico Rivera", email = "fernando.pujaico.rivera@gmail.com"}]
+maintainers = [{name = "Fernando Pujaico Rivera", email = "fernando.pujaico.rivera@gmail.com"}]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "GPL-3.0-only WITH Classpath-Exception-2.0 OR BSD-3-Clause"
+license-files = ["LICENSE"]
+keywords = ["writing", "research"]
+dependencies = [
+    "PyQt5",
+    "bibtexparser"
+]
+
+[project.urls]
+"Bug Reports" = "https://github.com/trucomanx/AcademicPublicationManager/issues"
+"Funding" = "https://trucomanx.github.io/en/funding.html"
+"Documentation" = "https://github.com/trucomanx/AcademicPublicationManager/tree/main/doc"
+"Source" = "https://github.com/trucomanx/AcademicPublicationManager"
+
+[project.scripts]
+"academic-publication-manager" = "academic_publication_manager.program:main"
+
+[tool.setuptools]
+packages = ["academic_publication_manager", "academic_publication_manager.modules"]
+
+[tool.setuptools.package-data]
+"academic_publication_manager" = ["icons/*.png"]
