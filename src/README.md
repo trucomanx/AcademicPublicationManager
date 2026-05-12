@@ -2,7 +2,7 @@
 
 Simple academic publication manager GUI.
 
-![logo](https://raw.githubusercontent.com/trucomanx/AcademicPublicationManager/main/screenshot.png)
+![logo](https://raw.githubusercontent.com/trucomanx-desktop/AcademicPublicationManager/main/screenshot.png)
 
 ## 1. Installing
 
@@ -24,7 +24,7 @@ academic-publication-manager
 ```
 ## 2. More information
 
-If you want more information go to [doc](https://github.com/trucomanx/AcademicPublicationManager/blob/main/doc) directory.
+If you want more information go to [doc](https://github.com/trucomanx-desktop/AcademicPublicationManager/blob/main/doc) directory.
 
 ## 3. Buy me a coffee
 

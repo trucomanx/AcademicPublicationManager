@@ -21,7 +21,7 @@ academic-publication-manager
 Installing `academic-publication-manager` program
 
 ```bash
-git clone https://github.com/trucomanx/AcademicPublicationManager.git
+git clone https://github.com/trucomanx-desktop/AcademicPublicationManager.git
 cd AcademicPublicationManager
 pip install -r requirements.txt
 cd src

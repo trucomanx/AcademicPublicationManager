@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "academic_publication_manager"
-version = "0.1.4"
+version = "0.1.5"
 description = "Simple academic publication manager GUI."
 readme = "README.md"
 authors = [{name = "Fernando Pujaico Rivera", email = "fernando.pujaico.rivera@gmail.com"}]
@@ -23,10 +23,10 @@ dependencies = [
 ]
 
 [project.urls]
-"Bug Reports" = "https://github.com/trucomanx/AcademicPublicationManager/issues"
+"Bug Reports" = "https://github.com/trucomanx-desktop/AcademicPublicationManager/issues"
 "Funding" = "https://trucomanx.github.io/en/funding.html"
-"Documentation" = "https://github.com/trucomanx/AcademicPublicationManager/tree/main/doc"
-"Source" = "https://github.com/trucomanx/AcademicPublicationManager"
+"Documentation" = "https://github.com/trucomanx-desktop/AcademicPublicationManager/tree/main/doc"
+"Source" = "https://github.com/trucomanx-desktop/AcademicPublicationManager"
 
 [project.scripts]
 "academic-publication-manager" = "academic_publication_manager.program:main"
